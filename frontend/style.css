@@ -8,6 +8,8 @@
     --glass-border: rgba(255, 255, 255, 0.2);
     --success-color: #00ff9d;
     --error-color: #ff4d4d;
+    --button-bg: #0077ff;
+    --button-hover: #005fcc;
 }
 
 * {
@@ -25,42 +27,48 @@ body {
     align-items: center;
     min-height: 100vh;
     padding: 2rem;
-    /* CORRECTION CRITIQUE: Permet le défilement et corrige le "zoom" sur mobile */
     overflow-y: auto; 
     position: relative;
 }
 
+/* --- BACKGROUND ANIMATION (GLOW) --- */
 .background-animation {
-    /* CORRECTION CRITIQUE: L'animation reste en arrière-plan et ne défile pas */
     position: fixed; 
     top: 50%;
     left: 50%;
     width: 150%;
     height: 150%;
-    background: radial-gradient(circle, var(--purple-glow) 0%, var(--blue-glow) 50%, var(--background-dark) 70%);
+    background: radial-gradient(circle at 70% 30%, var(--purple-glow) 0%, transparent 15%),
+                radial-gradient(circle at 30% 70%, var(--blue-glow) 0%, transparent 15%);
+    background-size: 100% 100%;
+    filter: blur(100px);
     opacity: 0.3;
-    transform: translate(-50%, -50%);
-    animation: rotateBackground 60s linear infinite;
     z-index: -1;
+    transform: translate(-50%, -50%);
+    animation: pulse 15s infinite alternate;
 }
 
-@keyframes rotateBackground {
-    from { transform: translate(-50%, -50%) rotate(0deg); }
-    to { transform: translate(-50%, -50%) rotate(360deg); }
+@keyframes pulse {
+    0% { opacity: 0.3; }
+    50% { opacity: 0.5; }
+    100% { opacity: 0.3; }
 }
 
+/* --- CARD GENERAL --- */
 .card {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
-    backdrop-filter: blur(10px);
     border-radius: 12px;
-    padding: 2.5rem;
-    max-width: 450px;
-    width: 100%;
+    padding: 2rem;
     box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    width: 100%;
+    max-width: 450px; /* Taille idéale pour mobile/desktop */
     z-index: 10;
 }
 
+/* --- HEADER --- */
 .card-header {
     text-align: center;
     margin-bottom: 2rem;
@@ -69,159 +77,143 @@ body {
 .title {
     font-size: 2rem;
     font-weight: 700;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
     color: var(--text-primary);
 }
 
 .subtitle {
     font-size: 1rem;
-    font-weight: 300;
     color: var(--text-secondary);
 }
 
-/* --- STATUT ET PROGRESSION --- */
-
-.status-section {
-    text-align: center;
-    margin-bottom: 2rem;
+/* --- FORMULAIRE --- */
+#email-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
 }
 
-.status-section h2 {
-    font-size: 1.25rem;
+#email-form input:not([type="checkbox"]) {
+    padding: 0.75rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.3);
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: border-color 0.3s;
+}
+
+#email-form input:focus {
+    border-color: var(--blue-glow);
+    outline: none;
+}
+
+/* --- BOUTON CTA --- */
+.cta-button {
+    background: var(--button-bg);
+    color: var(--text-primary);
+    border: none;
+    border-radius: 6px;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s, opacity 0.3s;
+    text-decoration: none;
+    text-align: center;
+}
+
+.cta-button:hover {
+    background: var(--button-hover);
+}
+
+.cta-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* --- MESSAGES FEEDBACK --- */
+.message {
+    text-align: center;
+    font-size: 0.9rem;
+    padding: 0.5rem;
+    border-radius: 4px;
+}
+
+.success {
+    color: var(--success-color);
+    background: rgba(0, 255, 157, 0.1);
+}
+
+.error {
+    color: var(--error-color);
+    background: rgba(255, 77, 77, 0.1);
+}
+
+/* --- SECTION STATUS / PROGRESSION --- */
+.status-section {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+#status-title {
+    font-size: 1.1rem;
     font-weight: 600;
     margin-bottom: 0.75rem;
+    color: var(--success-color);
 }
 
 .progress-bar-container {
+    height: 10px;
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 50px;
-    height: 15px;
+    border-radius: 5px;
     overflow: hidden;
     margin-bottom: 0.5rem;
 }
 
-#progress-bar {
+.progress-bar {
     height: 100%;
-    background: linear-gradient(90deg, var(--blue-glow), var(--purple-glow));
-    transition: width 0.5s ease-out;
-    border-radius: 50px;
+    background-color: var(--success-color);
+    width: 0%;
+    transition: width 0.5s ease-in-out;
 }
 
-.status-text, .remaining-text {
+.status-text {
     font-size: 0.9rem;
     color: var(--text-secondary);
 }
 
-.status-text span, .remaining-text span {
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
-
-/* --- FORMULAIRE ET BOUTONS --- */
-#email-form {
-    display: flex;
-    flex-direction: column; 
-    gap: 15px;
-}
-
-#email-form input[type="text"], 
-#email-form input[type="tel"], 
-#email-form input[type="email"],
-.field-control input[type="text"],
-.field-control input[type="number"],
-.field-control input[type="password"] {
-    width: 100%; 
-    padding: 15px;
-    border: 1px solid var(--glass-border);
-    border-radius: 8px;
-    background: rgba(0,0,0,0.3);
-    color: var(--text-primary);
-    font-size: 16px;
-    transition: border-color 0.3s ease;
-}
-
-/* Style de focus pour tous les inputs */
-#email-form input:focus,
-.field-control input:focus {
-    border-color: var(--purple-glow);
-    outline: none;
-}
-
-#submit-button, .cta-button {
-    background: linear-gradient(90deg, var(--blue-glow), var(--purple-glow));
-    color: var(--text-primary);
-    border: none;
-    padding: 15px;
-    font-size: 1rem;
-    font-weight: 600;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-align: center;
-    text-decoration: none;
-}
-
-#submit-button:hover, .cta-button:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-}
-
-#submit-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: translateY(0);
-    box-shadow: none;
-}
-
-.message {
-    text-align: center;
-    margin-top: 1rem;
-    /* CORRECTION: Ajout de margin-bottom et retrait de hauteur fixe pour messages longs */
-    margin-bottom: 1rem; 
-    font-weight: 400;
-    transition: color 0.3s ease;
-    word-wrap: break-word; 
-    white-space: normal;
-}
-.message.success { color: var(--success-color); }
-.message.error { color: var(--error-color); }
-
-/* --- LISTE DES INSCRITS (Affinement du Design) --- */
-
+/* --- LISTE DES INSCRITS --- */
 .registered-list-section {
     margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--glass-border);
 }
-.registered-list-section h3 {
-    margin-bottom: 1rem; /* Assure un espacement avant la liste */
+
+#list-title {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
 }
 
 #email-list {
     list-style: none;
     max-height: 150px;
     overflow-y: auto;
-    background: rgba(0,0,0,0.2);
-    padding: 1rem;
-    border-radius: 8px;
-    border: 1px solid var(--glass-border);
+    padding: 0 0.5rem;
 }
 
 #email-list li {
-    padding: 0.5rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
     color: var(--text-secondary);
-    border-bottom: 1px solid var(--glass-border);
-    animation: fadeInItem 0.5s ease-out;
-    word-wrap: break-word; 
-    white-space: normal;
-}
-
-#email-list li:last-child {
-    border-bottom: none;
-}
-
-@keyframes fadeInItem {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    padding: 0.25rem 0;
+    border-bottom: 1px dotted rgba(255, 255, 255, 0.05);
 }
 
 /* --- LIMITE ATTEINTE --- */
@@ -246,18 +238,52 @@ body {
     display: none !important;
 }
 
+/* ==================================== */
 /* --- ADMIN DASHBOARD STYLES --- */
+/* ==================================== */
+
+.admin-card {
+    max-width: 700px; /* Plus large pour l'administration */
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: left;
+    margin-bottom: 1.5rem;
+}
+
+.admin-header .title {
+    font-size: 1.5rem;
+}
+
 .admin-section { 
     margin-bottom: 2rem; 
     padding: 1rem; 
     border: 1px solid var(--glass-border); 
     border-radius: 8px; 
+    background: rgba(0, 0, 0, 0.1);
 }
 .admin-section h3 { 
     border-bottom: 1px solid var(--text-secondary); 
     padding-bottom: 0.5rem; 
     margin-bottom: 1rem; 
+    font-size: 1.2rem;
 }
+.admin-section h4 {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    color: var(--success-color);
+}
+.separator {
+    border: 0;
+    height: 1px;
+    background: var(--glass-border);
+    margin: 1.5rem 0;
+}
+
+/* Contrôles de champ (labels + inputs) */
 .field-control { 
     display: flex; 
     align-items: center; 
@@ -270,76 +296,145 @@ body {
     font-size: 0.95rem;
     color: var(--text-secondary);
 }
-.field-control input[type="text"], 
-.field-control input[type="number"],
-.field-control input[type="password"] {
-    flex: 2; 
-    min-width: 50%;
+.field-control input:not([type="checkbox"]) {
+    flex: 2;
+    padding: 0.5rem; 
+    border: 1px solid var(--glass-border); 
+    border-radius: 4px; 
+    background: rgba(0,0,0,0.3); 
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    max-width: 50%; /* Limiter la largeur des inputs sur desktop */
 }
-.field-control input[type="checkbox"] {
-    width: auto;
+
+/* Checkbox (interrupteur/switch) */
+.checkbox-control {
+    border-top: 1px dashed rgba(255, 255, 255, 0.1);
+    padding-top: 0.75rem;
+}
+
+.checkbox-control input[type="checkbox"] {
+    /* Utiliser des styles de switch modernes si possible, sinon un simple checkbox est OK */
+    width: 20px;
     height: 20px;
-    margin-left: 10px;
+    cursor: pointer;
 }
+
+/* TABLEAU DES INSCRITS */
+.table-container {
+    overflow-x: auto; /* Permet le scroll horizontal sur mobile */
+}
+
 .admin-table { 
     width: 100%; 
     border-collapse: collapse; 
     margin-top: 1rem; 
+    min-width: 600px; /* Force le scroll sur les petits écrans */
 }
+
 .admin-table th, .admin-table td { 
     border: 1px solid var(--glass-border); 
     padding: 0.75rem; 
     text-align: left; 
-    font-size: 0.9rem;
-}
-.admin-table th {
-    background: rgba(0,0,0,0.4);
-    color: var(--purple-glow);
+    font-size: 0.85rem;
 }
 
-/* AJOUTER CECI A LA FIN DE VOTRE style.css EXISTANT */
+.admin-table th { 
+    background: rgba(255, 255, 255, 0.1); 
+    color: var(--text-primary); 
+    font-weight: 600;
+}
 
-/* --- Styles spécifiques pour la Table Admin améliorée --- */
+.admin-table td {
+    color: var(--text-secondary);
+    vertical-align: middle;
+}
 
+/* Boutons d'action dans la table */
 .cell-with-copy {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 10px;
 }
 
 .copy-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid var(--glass-border);
+    background: none;
+    border: none;
     color: var(--text-secondary);
-    border-radius: 4px;
-    padding: 2px 6px;
+    font-size: 0.9rem;
     cursor: pointer;
-    font-size: 1rem;
-    transition: all 0.2s;
+    transition: color 0.2s;
 }
-
 .copy-btn:hover {
-    background: var(--purple-glow);
-    color: white;
-    transform: scale(1.1);
+    color: var(--blue-glow);
 }
 
 .delete-btn {
-    background: rgba(255, 77, 77, 0.2) !important; /* Rouge transparent */
-    border: 1px solid var(--error-color) !important;
-    padding: 5px 10px !important;
-    font-size: 0.8rem !important;
-    width: auto !important;
+    background: var(--error-color);
+    font-size: 0.8rem;
+    padding: 0.5rem;
 }
-
 .delete-btn:hover {
-    background: var(--error-color) !important;
-    color: white !important;
+    background: #cc3939;
 }
 
-/* Ajustement de la table */
-.admin-table td {
-    vertical-align: middle;
-}
 
+/* ==================================== */
+/* --- MEDIA QUERIES (Mobile) --- */
+/* ==================================== */
+
+@media (max-width: 768px) {
+    /* CARD PRINCIPALE */
+    .card {
+        padding: 1.5rem;
+    }
+
+    /* ADMIN CARD */
+    .card.admin-card {
+        width: 100%;
+        max-width: 100%;
+        padding: 1rem;
+    }
+    
+    .admin-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    /* Contrôles d'administration (Stack vertical) */
+    .field-control { 
+        flex-direction: column; 
+        align-items: flex-start; 
+    }
+    
+    .field-control label { 
+        width: 100%; 
+        margin-right: 0; 
+        margin-bottom: 5px; 
+    }
+
+    .field-control input:not([type="checkbox"]) {
+        width: 100%;
+        max-width: 100%; /* Prend toute la largeur sur mobile */
+    }
+
+    /* Checkbox (Alignement horizontal conservé) */
+    .field-control.checkbox-control {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+    
+    /* Table (Le style `min-width: 600px` et `overflow-x: auto` gèrent le scroll) */
+    .admin-table th, .admin-table td {
+        padding: 0.5rem;
+    }
+
+    /* Boutons plus petits sur mobile */
+    .delete-btn {
+        padding: 4px 8px;
+        font-size: 0.7rem;
+    }
+}

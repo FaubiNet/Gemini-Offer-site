@@ -9,12 +9,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // Champs de settings
     const titleInput = document.getElementById('admin-title-text');
     const buttonInput = document.getElementById('admin-button-text');
+    
+    // NOUVEAU: Champs de texte pour le statut
+    const statusTitleInput = document.getElementById('admin-status-title');
+    const statusTextInput = document.getElementById('admin-status-text');
+    
+    // NOUVEAU: Champs de texte pour la limite atteinte
+    const limitTitleInput = document.getElementById('admin-limit-title');
+    const limitMessageInput = document.getElementById('admin-limit-message');
+
+    // Champs numériques et booléens
     const maxUsersInput = document.getElementById('admin-max-users');
     const regOpenInput = document.getElementById('admin-registration-open');
     const reqFNameInput = document.getElementById('admin-require-first-name');
     const reqLNameInput = document.getElementById('admin-require-last-name');
     const reqPhoneInput = document.getElementById('admin-require-phone');
-    const passwordInput = document.getElementById('admin-password-input');
+    const passwordInput = document.getElementById('admin-password-input'); // Champ de NOUVEAU mot de passe
 
     // Connexion
     const loginButton = document.getElementById('login-btn');
@@ -39,13 +49,14 @@ document.addEventListener('DOMContentLoaded', () => {
     window.copyToClipboard = (text) => {
         if (!text) return;
         navigator.clipboard.writeText(text).then(() => {
-            // Petit feedback visuel temporaire
             const originalText = adminMessageFeedback.textContent;
             adminMessageFeedback.textContent = `Copié : ${text}`;
             adminMessageFeedback.className = 'message success';
             setTimeout(() => {
-                adminMessageFeedback.textContent = originalText;
-                adminMessageFeedback.className = 'message';
+                if (adminMessageFeedback.textContent.startsWith('Copié')) {
+                    adminMessageFeedback.textContent = 'Dashboard à jour.';
+                    adminMessageFeedback.className = 'message success';
+                }
             }, 2000);
         }).catch(err => {
             console.error('Erreur copie:', err);
@@ -54,9 +65,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // Fonction pour supprimer (Trash)
+    // Fonction pour supprimer
     window.deleteUser = async (email, btnElement) => {
-        if (!confirm(`Voulez-vous vraiment déplacer ${email} dans la corbeille ? Il ne pourra pas se réinscrire.`)) return;
+        if (!confirm(`Voulez-vous vraiment déplacer ${email} dans la corbeille ?`)) return;
 
         btnElement.disabled = true;
         btnElement.textContent = '...';
@@ -68,25 +79,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ email: email }),
             });
 
-            if (!response.ok) throw new Error('Erreur suppression');
+            if (!response.ok) {
+                const result = await response.json();
+                throw new Error(result.message || 'Erreur suppression');
+            }
 
             // Recharger les données pour mettre à jour la liste
             await loadAdminData();
 
         } catch (error) {
             console.error(error);
-            alert("Erreur lors de la suppression.");
+            alert(`Erreur lors de la suppression: ${error.message}`);
             btnElement.disabled = false;
-            btnElement.textContent = 'Supprimer';
+            btnElement.textContent = '🗑️ Supprimer';
         }
     };
 
-    // --- Affichage ---
+    // --- Affichage et Connexion ---
 
     const showLogin = (message = null) => {
         loginFormContainer.classList.remove('hidden');
         adminDashboard.classList.add('hidden');
-        logoutBtn.style.display = 'none'; // Cacher le bouton déconnexion
+        logoutBtn.style.display = 'none';
         if (message) {
             loginMessageFeedback.textContent = message;
             loginMessageFeedback.className = 'message error';
@@ -102,10 +116,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const showDashboard = () => {
         loginFormContainer.classList.add('hidden');
         adminDashboard.classList.remove('hidden');
-        logoutBtn.style.display = 'inline-block'; // Afficher le bouton déconnexion
+        logoutBtn.style.display = 'inline-block';
     };
-
-    // --- Logique de connexion ---
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -133,7 +145,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(result.message || 'Erreur.');
             }
 
-            sessionStorage.setItem('adminLoggedIn', 'true');
+            // Simule une session admin (non sécurisé, mais suit votre implémentation)
+            sessionStorage.setItem('adminLoggedIn', 'true'); 
             await loadAdminData(); 
 
         } catch (error) {
@@ -156,7 +169,8 @@ document.addEventListener('DOMContentLoaded', () => {
         adminMessageFeedback.className = 'message';
 
         try {
-            const response = await fetch(`${API_BASE_URL}/getEmails`);
+            // Utilise getEmails car il renvoie settings ET registrations
+            const response = await fetch(`${API_BASE_URL}/getEmails`); 
             const data = await response.json();
 
             if (!response.ok) throw new Error('Erreur connexion données.');
@@ -166,6 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const passwordHashExists = CURRENT_SETTINGS.admin_password;
 
+            // Logique de connexion
             if (passwordHashExists && sessionStorage.getItem('adminLoggedIn') !== 'true') {
                 return showLogin('Accès restreint. Connectez-vous.');
             } else if (!passwordHashExists) {
@@ -178,9 +193,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 adminMessageFeedback.className = 'message success';
             }
 
-            // Champs Settings
+            // Remplissage des Champs Settings
             titleInput.value = CURRENT_SETTINGS.title_text || '';
             buttonInput.value = CURRENT_SETTINGS.button_text || '';
+
+            // NOUVEAU: Champs de texte pour le statut
+            statusTitleInput.value = CURRENT_SETTINGS.status_title || '';
+            statusTextInput.value = CURRENT_SETTINGS.status_text || '';
+
+            // NOUVEAU: Champs de texte pour la limite atteinte
+            limitTitleInput.value = CURRENT_SETTINGS.limit_title || '';
+            limitMessageInput.value = CURRENT_SETTINGS.limit_message || '';
+            
+            // Champs numériques et booléens
             maxUsersInput.value = CURRENT_SETTINGS.max_users || 5;
             regOpenInput.checked = CURRENT_SETTINGS.registration_open;
             reqFNameInput.checked = CURRENT_SETTINGS.require_first_name;
@@ -192,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
             adminRegCount.textContent = registrations.length;
             adminMaxCount.textContent = CURRENT_SETTINGS.max_users;
 
-            // Table Colonnes
+            // Table Colonnes (Afficher/Cacher selon les exigences)
             thFName.classList.toggle('hidden', !CURRENT_SETTINGS.require_first_name);
             thLName.classList.toggle('hidden', !CURRENT_SETTINGS.require_last_name);
             thPhone.classList.toggle('hidden', !CURRENT_SETTINGS.require_phone);
@@ -206,34 +231,41 @@ document.addEventListener('DOMContentLoaded', () => {
                 registrations.forEach(reg => {
                     const tr = document.createElement('tr');
                     
-                    // Email avec bouton Copier
+                    // Code HTML pour une ligne (email, nom, tel, actions)
                     let html = `
                         <td class="cell-with-copy">
                             <span>${reg.email}</span>
-                            <button class="copy-btn" onclick="copyToClipboard('${reg.email}')" title="Copier l'email">📋</button>
+                            <button class="copy-btn" onclick="copyToClipboard('${reg.email.replace(/'/g, "\\'")}')" title="Copier l'email">📋</button>
                         </td>`;
 
                     if (CURRENT_SETTINGS.require_first_name) html += `<td>${reg.first_name || '-'}</td>`;
                     if (CURRENT_SETTINGS.require_last_name) html += `<td>${reg.last_name || '-'}</td>`;
                     
-                    // Téléphone avec bouton Copier (si requis)
                     if (CURRENT_SETTINGS.require_phone) {
                         const phoneDisplay = reg.phone_number || '-';
                         if(reg.phone_number) {
+                            // Assurez-vous d'échapper les caractères pour le onclick
+                            const safePhone = reg.phone_number.replace(/'/g, "\\'");
                             html += `
                             <td class="cell-with-copy">
                                 <span>${phoneDisplay}</span>
-                                <button class="copy-btn" onclick="copyToClipboard('${reg.phone_number}')" title="Copier le numéro">📋</button>
+                                <button class="copy-btn" onclick="copyToClipboard('${safePhone}')" title="Copier le numéro">📋</button>
                             </td>`;
                         } else {
                             html += `<td>${phoneDisplay}</td>`;
                         }
+                    } else if (!CURRENT_SETTINGS.require_first_name && !CURRENT_SETTINGS.require_last_name && !CURRENT_SETTINGS.require_phone) {
+                         // Si tout est masqué, le téléphone reste affiché pour l'espace si c'est la 4e colonne
+                        html += `<td>-</td>`; 
                     }
 
-                    // Bouton Supprimer (Trash)
+
+                    // Bouton Supprimer
+                    // Assurez-vous d'échapper l'email pour le onclick
+                    const safeEmail = reg.email.replace(/'/g, "\\'");
                     html += `
                         <td style="text-align: center;">
-                            <button class="cta-button delete-btn" onclick="deleteUser('${reg.email}', this)">
+                            <button class="cta-button delete-btn" onclick="deleteUser('${safeEmail}', this)">
                                 🗑️ Supprimer
                             </button>
                         </td>`;
@@ -244,11 +276,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
         } catch (error) {
+            // Si le chargement échoue (ex: pas de mot de passe Admin configuré ou erreur Supabase)
             showLogin(error.message);
         }
     };
 
-    // --- Sauvegarde ---
+    // --- Sauvegarde des paramètres ---
 
     const saveSettings = async () => {
         saveButton.disabled = true;
@@ -258,11 +291,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const newSettings = {
             title_text: titleInput.value.trim(),
             button_text: buttonInput.value.trim(),
+            
+            // NOUVEAU: Ajout des valeurs de texte
+            status_title: statusTitleInput.value.trim(),
+            status_text: statusTextInput.value.trim(),
+            limit_title: limitTitleInput.value.trim(),
+            limit_message: limitMessageInput.value.trim(),
+
             max_users: parseInt(maxUsersInput.value, 10),
             registration_open: regOpenInput.checked,
             require_first_name: reqFNameInput.checked,
             require_last_name: reqLNameInput.checked,
             require_phone: reqPhoneInput.checked,
+            // N'envoie le mot de passe que s'il a été saisi
             ...(passwordInput.value.trim() && { admin_password: passwordInput.value.trim() }) 
         };
 
@@ -278,7 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             adminMessageFeedback.textContent = 'Sauvegardé !';
             adminMessageFeedback.className = 'message success';
-            passwordInput.value = ''; 
+            passwordInput.value = ''; // Efface le champ après sauvegarde
             await loadAdminData(); 
 
         } catch (error) {
@@ -289,6 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- Initialisation des événements ---
     saveButton.addEventListener('click', saveSettings);
     loginFormContainer.addEventListener('submit', handleLogin);
     logoutBtn.addEventListener('click', handleLogout);

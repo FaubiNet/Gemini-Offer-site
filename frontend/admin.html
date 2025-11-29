@@ -5,79 +5,92 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Admin - Gemini Offer</title>
     <link rel="stylesheet" href="style.css"> 
-    <style>
-        /* Styles spécifiques pour l'Admin */
-        .admin-section { margin-bottom: 2rem; padding: 1rem; border: 1px solid var(--glass-border); border-radius: 8px; }
-        .admin-section h3 { border-bottom: 1px solid var(--text-secondary); padding-bottom: 0.5rem; margin-bottom: 1rem; }
-        .field-control { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
-        .field-control label { flex: 1; }
-        /* Assurez-vous d'avoir ce style pour le champ mot de passe */
-        .field-control input[type="text"], .field-control input[type="number"], .field-control input[type="password"] { padding: 0.5rem; border: 1px solid var(--glass-border); border-radius: 4px; background: rgba(0,0,0,0.3); color: var(--text-primary); }
-        .admin-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-        .admin-table th, .admin-table td { border: 1px solid var(--glass-border); padding: 0.75rem; text-align: left; }
-        /* Classe essentielle pour la logique du JS */
-        .hidden { display: none !important; } 
-        #login-form-container { text-align: center; max-width: 400px; }
-    </style>
 </head>
 <body>
     <div class="background-animation"></div>
-    <main class="card">
-        <div class="card-header">
+    
+    <main class="card admin-card"> 
+        <header class="card-header admin-header">
             <h1 class="title">Dashboard Admin</h1>
-            <p class="subtitle">Gestion de la Campagne Gemini</p>
-            <button id="logout-btn" class="cta-button" style="background: var(--error-color); margin-top: 1rem; display: none;">Déconnexion</button>
-        </div>
+            <button id="logout-btn" class="cta-button">Déconnexion</button>
+        </header>
+        
+        <p id="admin-message-feedback" class="message"></p>
 
-        <div id="login-form-container" class="admin-section hidden">
+        <div id="login-form-container">
             <h3>Connexion Administrateur</h3>
             <form id="login-form">
-                <div class="field-control" style="flex-direction: column; align-items: flex-start;">
-                    <label for="login-password-input" style="margin-bottom: 0.5rem;">Mot de passe :</label>
-                    <input type="password" id="login-password-input" placeholder="Mot de passe" required style="width: 100%;">
-                </div>
-                <button type="submit" id="login-btn" class="cta-button" style="width: 100%; margin-top: 1rem;">Se Connecter</button>
+                <input type="password" id="login-password-input" placeholder="Mot de passe Admin" required>
+                <button type="submit" id="login-btn" class="cta-button" style="width: 100%;">Se Connecter</button>
             </form>
             <p id="login-message-feedback" class="message"></p>
         </div>
+
         <div id="admin-dashboard" class="hidden">
-            <p id="admin-message-feedback" class="message"></p>
-            <section class="admin-section" id="admin-settings-section">
-                <h3>Paramètres Généraux</h3>
+            
+            <section class="admin-section settings-section">
+                <h3>Paramètres Textes & Limites</h3>
+                
                 <div class="field-control">
-                    <label for="admin-title-text">Titre de la Page :</label>
-                    <input type="text" id="admin-title-text" placeholder="Titre principal">
+                    <label for="admin-title-text">Titre principal de la page :</label>
+                    <input type="text" id="admin-title-text" placeholder="Gemini Enterprise">
                 </div>
                 <div class="field-control">
-                    <label for="admin-button-text">Texte du Bouton :</label>
-                    <input type="text" id="admin-button-text" placeholder="Texte du CTA">
+                    <label for="admin-button-text">Texte du bouton d'inscription :</label>
+                    <input type="text" id="admin-button-text" placeholder="Sécuriser ma place">
+                </div>
+                
+                <hr class="separator">
+                
+                <h4>Textes de Statut (Barre de Progression)</h4>
+                <div class="field-control">
+                    <label for="admin-status-title">Titre de Statut (ex: Vague 1) :</label>
+                    <input type="text" id="admin-status-title" placeholder="Accès Anticipé – Vague 1">
                 </div>
                 <div class="field-control">
-                    <label for="admin-max-users">Limite Max d'Utilisateurs :</label>
-                    <input type="number" id="admin-max-users" value="5" min="1">
+                    <label for="admin-status-text">Texte de Progression (ex: places restantes) :</label>
+                    <input type="text" id="admin-status-text" placeholder="places restantes">
+                </div>
+                
+                <hr class="separator">
+
+                <h4>Textes Limite Atteinte</h4>
+                <div class="field-control">
+                    <label for="admin-limit-title">Titre Limite Atteinte :</label>
+                    <input type="text" id="admin-limit-title" placeholder="L’offre est terminée !">
                 </div>
                 <div class="field-control">
-                    <label for="admin-registration-open">Inscriptions Ouvertes :</label>
+                    <label for="admin-limit-message">Message Limite Atteinte :</label>
+                    <input type="text" id="admin-limit-message" placeholder="Retourne sur la chaîne...">
+                </div>
+                
+                <hr class="separator">
+
+                <h4>Gestion des Inscriptions</h4>
+                <div class="field-control">
+                    <label for="admin-max-users">Limite Max d'inscrits :</label>
+                    <input type="number" id="admin-max-users" min="1" value="5">
+                </div>
+                
+                <div class="field-control checkbox-control">
+                    <label for="admin-registration-open">Inscription Ouverte :</label>
                     <input type="checkbox" id="admin-registration-open">
                 </div>
-
-                <hr style="border: 1px solid var(--glass-border); margin: 1.5rem 0;">
-
-                <h3>Champs Requis pour l'Inscription</h3>
-                <div class="field-control">
-                    <label for="admin-require-first-name">Prénom :</label>
+                
+                <div class="field-control checkbox-control">
+                    <label for="admin-require-first-name">Exiger Prénom :</label>
                     <input type="checkbox" id="admin-require-first-name">
                 </div>
-                <div class="field-control">
-                    <label for="admin-require-last-name">Nom de Famille :</label>
+                <div class="field-control checkbox-control">
+                    <label for="admin-require-last-name">Exiger Nom :</label>
                     <input type="checkbox" id="admin-require-last-name">
                 </div>
-                <div class="field-control">
-                    <label for="admin-require-phone">Numéro de Téléphone :</label>
+                <div class="field-control checkbox-control">
+                    <label for="admin-require-phone">Exiger Téléphone :</label>
                     <input type="checkbox" id="admin-require-phone">
                 </div>
                 
-                <hr style="border: 1px solid var(--glass-border); margin: 1.5rem 0;">
+                <hr class="separator">
                 
                 <div class="field-control">
                     <label for="admin-password-input">Mot de passe Admin (laissez vide pour ne pas changer) :</label>
@@ -87,21 +100,23 @@
                 <button id="save-settings-btn" class="cta-button" style="width: 100%; margin-top: 1rem;">Sauvegarder les Paramètres</button>
             </section>
 
-            <section class="registered-list-section">
-                <h3>Liste des Inscrits (<span id="admin-registered-count">0</span> / <span id="admin-max-count">5</span>)</h3>
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Email</th>
-                            <th id="th-first-name" class="hidden">Prénom</th>
-                            <th id="th-last-name" class="hidden">Nom</th>
-                            <th id="th-phone" class="hidden">Numéro</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="admin-registrations-list">
+            <section class="registered-list-section admin-section">
+                <h3>Liste des Inscrits Actifs (<span id="admin-registered-count">0</span> / <span id="admin-max-count">5</span>)</h3>
+                <div class="table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Email</th>
+                                <th id="th-first-name" class="hidden">Prénom</th>
+                                <th id="th-last-name" class="hidden">Nom</th>
+                                <th id="th-phone" class="hidden">Numéro</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-registrations-list">
                         </tbody>
-                </table>
+                    </table>
+                </div>
             </section>
         </div>
         </main>
