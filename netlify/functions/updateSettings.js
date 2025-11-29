@@ -1,6 +1,7 @@
 // netlify/functions/updateSettings.js
 const { createClient } = require('@supabase/supabase-js');
-const bcrypt = require('bcryptjs'); // Nécessite npm install bcryptjs
+
+// La dépendance bcryptjs n'est plus nécessaire
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -15,16 +16,14 @@ exports.handler = async (event, context) => {
     const body = JSON.parse(event.body || '{}');
     const updateData = { ...body };
     
-    // 1. Gérer le hachage du mot de passe
-    if (updateData.admin_password) {
-        // Hacher le nouveau mot de passe
-        const salt = await bcrypt.genSalt(10);
-        const hash = await bcrypt.hash(updateData.admin_password, salt);
-        updateData.admin_password = hash; // Stocker le hash
-    } else {
-        // Si le champ est vide, on le retire de la mise à jour pour conserver le hash existant
+    // --- DANGER: STOCKAGE EN CLAIR ---
+    // Si updateData.admin_password est fourni, il est stocké en clair.
+    if (!updateData.admin_password) {
+        // Si le champ est vide, on le retire de la mise à jour pour conserver l'ancien mot de passe
         delete updateData.admin_password;
     }
+    // ---------------------------------
+
 
     // 2. Mettre à jour la ligne unique avec ID=1
     const { data, error } = await supabase

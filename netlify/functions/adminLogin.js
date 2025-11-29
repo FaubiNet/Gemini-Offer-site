@@ -1,6 +1,7 @@
 // netlify/functions/adminLogin.js
 const { createClient } = require('@supabase/supabase-js');
-const bcrypt = require('bcryptjs'); // Nécessite npm install bcryptjs
+
+// La dépendance bcryptjs n'est plus nécessaire
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -21,30 +22,32 @@ exports.handler = async (event, context) => {
         body: JSON.stringify({ message: 'Mot de passe manquant.' }),
       };
     }
-    
-    // 1. Récupérer le hash du mot de passe admin
+
+    // 1. Récupérer le mot de passe en clair
     const { data: settings, error } = await supabase
         .from('settings')
         .select('admin_password')
         .eq('id', 1)
         .single();
-    
-    if (error) {
-        // Gérer l'erreur si la ligne settings ID=1 n'existe pas
-        throw new Error('Erreur de configuration serveur.'); 
-    }
-    
-    const passwordHash = settings.admin_password;
 
-    if (!passwordHash) {
+    if (error) {
+        throw new Error('Erreur de configuration serveur. (Vérifiez la ligne ID=1 dans la table settings)');
+    }
+
+    const storedPassword = settings.admin_password; // C'est le mot de passe en clair stocké
+
+    if (!storedPassword) {
         return {
             statusCode: 403,
             body: JSON.stringify({ message: 'Mot de passe non configuré. Veuillez contacter l\'administrateur.' }),
         };
     }
 
-    // 2. Comparer le mot de passe soumis avec le hash stocké
-    const isMatch = await bcrypt.compare(submittedPassword, passwordHash);
+    // --- DANGER: COMPARISON EN CLAIR ---
+    // 2. Comparer directement le mot de passe soumis avec le mot de passe stocké
+    const isMatch = submittedPassword === storedPassword;
+    // ---------------------------------
+
 
     if (!isMatch) {
       return {

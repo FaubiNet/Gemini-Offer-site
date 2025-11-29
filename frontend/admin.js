@@ -46,7 +46,6 @@ document.addEventListener('DOMContentLoaded', () => {
              loginMessageFeedback.textContent = '';
              loginMessageFeedback.className = 'message';
         }
-        // Réinitialiser le champ de mot de passe de connexion
         loginPasswordInput.value = '';
         loginButton.disabled = false;
         loginButton.textContent = 'Se Connecter';
@@ -88,8 +87,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             sessionStorage.setItem('adminLoggedIn', 'true');
-            await loadAdminData(); // Charge le dashboard après connexion
-            
+            await loadAdminData(); 
+
         } catch (error) {
             loginMessageFeedback.textContent = error.message;
             loginMessageFeedback.className = 'message error';
@@ -115,7 +114,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             if (!response.ok) {
-                 // Gère l'erreur critique de la ligne ID=1 manquante
                 throw new Error(data.message || 'Erreur de connexion aux données. (Vérifiez la ligne ID=1 dans la table settings)');
             }
 
@@ -136,8 +134,8 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 // Si le mot de passe existe ET l'utilisateur est connecté
                 showDashboard();
-                adminMessageFeedback.textContent = ''; // Efface le message de chargement
-                adminMessageFeedback.className = 'message';
+                adminMessageFeedback.textContent = 'Dashboard chargé.';
+                adminMessageFeedback.className = 'message success';
             }
 
             // 2. Mise à jour des champs du formulaire
@@ -176,7 +174,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         } catch (error) {
-            // Si le fetch échoue (problème Supabase ou Netlify), on montre l'erreur
             showLogin(error.message);
         }
     };
@@ -191,14 +188,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const newSettings = {
             title_text: titleInput.value.trim(),
             button_text: buttonInput.value.trim(),
-            // Conserver le message de limite existant si non modifié par l'admin
             limit_message: CURRENT_SETTINGS.limit_message || "Désolé, toutes les places sont prises.", 
             max_users: parseInt(maxUsersInput.value, 10),
             registration_open: regOpenInput.checked,
             require_first_name: reqFNameInput.checked,
             require_last_name: reqLNameInput.checked,
             require_phone: reqPhoneInput.checked,
-            // Seulement inclure le mot de passe s'il est rempli (sera haché par le backend)
             ...(passwordInput.value.trim() && { admin_password: passwordInput.value.trim() }) 
         };
 
@@ -217,8 +212,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             adminMessageFeedback.textContent = result.message || 'Paramètres sauvegardés !';
             adminMessageFeedback.className = 'message success';
-            passwordInput.value = ''; // Réinitialise le champ après envoi
-            await loadAdminData(); // Recharger les données pour synchronisation
+            passwordInput.value = ''; 
+            await loadAdminData(); 
 
         } catch (error) {
             adminMessageFeedback.textContent = error.message;
@@ -233,5 +228,5 @@ document.addEventListener('DOMContentLoaded', () => {
     loginFormContainer.addEventListener('submit', handleLogin);
     logoutBtn.addEventListener('click', handleLogout);
 
-    loadAdminData();
+    loadAdminData(); 
 });
