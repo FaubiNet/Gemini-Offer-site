@@ -9,25 +9,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // Champs de settings
     const titleInput = document.getElementById('admin-title-text');
     const buttonInput = document.getElementById('admin-button-text');
-    
-    // NOUVEAU: Champs de texte pour le statut
     const statusTitleInput = document.getElementById('admin-status-title');
     const statusTextInput = document.getElementById('admin-status-text');
-    
-    // NOUVEAU: Champs de texte pour la limite atteinte
     const limitTitleInput = document.getElementById('admin-limit-title');
     const limitMessageInput = document.getElementById('admin-limit-message');
-
-    // Champs numériques et booléens
     const maxUsersInput = document.getElementById('admin-max-users');
     const regOpenInput = document.getElementById('admin-registration-open');
     const reqFNameInput = document.getElementById('admin-require-first-name');
     const reqLNameInput = document.getElementById('admin-require-last-name');
     const reqPhoneInput = document.getElementById('admin-require-phone');
-    const passwordInput = document.getElementById('admin-password-input'); // Champ de NOUVEAU mot de passe
+    const passwordInput = document.getElementById('admin-password-input');
 
     // Connexion
-    const loginButton = document.getElementById('login-btn');
     const loginPasswordInput = document.getElementById('login-password-input');
     const logoutBtn = document.getElementById('logout-btn');
 
@@ -36,261 +29,253 @@ document.addEventListener('DOMContentLoaded', () => {
     const regListBody = document.getElementById('admin-registrations-list');
     const adminRegCount = document.getElementById('admin-registered-count');
     const adminMaxCount = document.getElementById('admin-max-count');
-    const thFName = document.getElementById('th-first-name');
-    const thLName = document.getElementById('th-last-name');
+    
+    // NOUVEAU: Boutons de vue et Compteurs Corbeille
+    const viewActiveBtn = document.getElementById('view-active-btn');
+    const viewTrashBtn = document.getElementById('view-trash-btn');
+    const adminTrashCount = document.getElementById('admin-trash-count');
+    
+    // Headers de table
+    const thFirstName = document.getElementById('th-first-name');
+    const thLastName = document.getElementById('th-last-name');
     const thPhone = document.getElementById('th-phone');
+    const thActions = document.getElementById('th-actions');
+
 
     const API_BASE_URL = '/api';
+    let ALL_REGISTRATIONS = []; 
     let CURRENT_SETTINGS = {};
+    let CURRENT_VIEW = 'active'; // 'active' ou 'trash'
 
-    // --- Fonctions Utilitaires ---
+    // --- NOUVELLE FONCTION: Masquage de l'email ---
+    const maskEmail = (email) => {
+        if (!email || typeof email !== 'string') return '';
+        const parts = email.split('@');
+        if (parts.length !== 2) return email;
 
-    // Fonction pour copier dans le presse-papier
-    window.copyToClipboard = (text) => {
-        if (!text) return;
-        navigator.clipboard.writeText(text).then(() => {
-            const originalText = adminMessageFeedback.textContent;
-            adminMessageFeedback.textContent = `Copié : ${text}`;
-            adminMessageFeedback.className = 'message success';
-            setTimeout(() => {
-                if (adminMessageFeedback.textContent.startsWith('Copié')) {
-                    adminMessageFeedback.textContent = 'Dashboard à jour.';
-                    adminMessageFeedback.className = 'message success';
-                }
-            }, 2000);
-        }).catch(err => {
-            console.error('Erreur copie:', err);
-            adminMessageFeedback.textContent = 'Erreur lors de la copie.';
-            adminMessageFeedback.className = 'message error';
-        });
+        const [localPart, domain] = parts;
+        
+        // Afficher les 3 premiers caractères du nom d'utilisateur, puis "****"
+        const maskedLocalPart = localPart.length > 3 
+            ? localPart.substring(0, 3) + '****' + localPart.substring(localPart.length - 4)
+            : '****'; // Au cas où le nom d'utilisateur est trop court
+            
+        return `${maskedLocalPart}@${domain}`;
     };
 
-    // Fonction pour supprimer
-    window.deleteUser = async (email, btnElement) => {
-        if (!confirm(`Voulez-vous vraiment déplacer ${email} dans la corbeille ?`)) return;
+    // --- Mise à jour de l'UI des Inscriptions ---
 
-        btnElement.disabled = true;
-        btnElement.textContent = '...';
+    const renderRegistrationsTable = (registrations) => {
+        regListBody.innerHTML = '';
+        const filteredRegistrations = registrations.filter(reg => 
+            CURRENT_VIEW === 'active' ? !reg.is_deleted : reg.is_deleted
+        );
+        
+        // Mettre à jour les compteurs
+        const activeCount = ALL_REGISTRATIONS.filter(reg => !reg.is_deleted).length;
+        const trashCount = ALL_REGISTRATIONS.filter(reg => reg.is_deleted).length;
+        adminRegCount.textContent = activeCount;
+        adminTrashCount.textContent = trashCount;
+        adminMaxCount.textContent = CURRENT_SETTINGS.max_users || 5;
+        
+        // Mettre à jour les classes actives des boutons
+        viewActiveBtn.classList.toggle('active', CURRENT_VIEW === 'active');
+        viewTrashBtn.classList.toggle('active', CURRENT_VIEW === 'trash');
+        
+        // Mettre à jour le texte du header d'actions
+        thActions.textContent = CURRENT_VIEW === 'active' ? 'Actions' : 'Gestion Corbeille';
 
-        try {
-            const response = await fetch(`${API_BASE_URL}/deleteEmail`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email }),
-            });
-
-            if (!response.ok) {
-                const result = await response.json();
-                throw new Error(result.message || 'Erreur suppression');
-            }
-
-            // Recharger les données pour mettre à jour la liste
-            await loadAdminData();
-
-        } catch (error) {
-            console.error(error);
-            alert(`Erreur lors de la suppression: ${error.message}`);
-            btnElement.disabled = false;
-            btnElement.textContent = '🗑️ Supprimer';
-        }
-    };
-
-    // --- Affichage et Connexion ---
-
-    const showLogin = (message = null) => {
-        loginFormContainer.classList.remove('hidden');
-        adminDashboard.classList.add('hidden');
-        logoutBtn.style.display = 'none';
-        if (message) {
-            loginMessageFeedback.textContent = message;
-            loginMessageFeedback.className = 'message error';
-        } else {
-             loginMessageFeedback.textContent = '';
-             loginMessageFeedback.className = 'message';
-        }
-        loginPasswordInput.value = '';
-        loginButton.disabled = false;
-        loginButton.textContent = 'Se Connecter';
-    };
-
-    const showDashboard = () => {
-        loginFormContainer.classList.add('hidden');
-        adminDashboard.classList.remove('hidden');
-        logoutBtn.style.display = 'inline-block';
-    };
-
-    const handleLogin = async (e) => {
-        e.preventDefault();
-        const password = loginPasswordInput.value.trim();
-
-        if (!password) {
-            loginMessageFeedback.textContent = 'Veuillez entrer le mot de passe.';
-            loginMessageFeedback.className = 'message error';
+        if (filteredRegistrations.length === 0) {
+            const row = regListBody.insertRow();
+            const cell = row.insertCell(0);
+            cell.colSpan = 5;
+            cell.textContent = CURRENT_VIEW === 'active' 
+                ? 'Aucun inscrit actif pour le moment.' 
+                : 'La corbeille est vide.';
+            cell.style.textAlign = 'center';
             return;
         }
 
-        loginButton.disabled = true;
-        loginButton.textContent = 'Connexion...';
+        filteredRegistrations.forEach(reg => {
+            const row = regListBody.insertRow();
+            
+            // Cellule Email (avec masquage)
+            const emailCell = row.insertCell();
+            emailCell.className = 'masked-email';
+            emailCell.textContent = maskEmail(reg.email);
+
+            // Autres cellules
+            row.insertCell().textContent = reg.first_name || '';
+            row.insertCell().textContent = reg.last_name || '';
+            row.insertCell().textContent = reg.phone_number || '';
+
+            // Cellule Actions
+            const actionsCell = row.insertCell();
+            actionsCell.className = 'cell-with-actions';
+
+            if (CURRENT_VIEW === 'active') {
+                // Bouton Mettre à la corbeille
+                const trashBtn = document.createElement('button');
+                trashBtn.textContent = 'Corbeille';
+                trashBtn.className = 'action-btn delete';
+                trashBtn.dataset.id = reg.id;
+                trashBtn.dataset.action = 'soft-delete';
+                actionsCell.appendChild(trashBtn);
+            } else { // Vue Corbeille
+                // Bouton Restaurer
+                const restoreBtn = document.createElement('button');
+                restoreBtn.textContent = 'Restaurer';
+                restoreBtn.className = 'action-btn';
+                restoreBtn.dataset.id = reg.id;
+                restoreBtn.dataset.action = 'restore';
+                actionsCell.appendChild(restoreBtn);
+
+                // Bouton Supprimer définitivement
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Supprimer Déf.';
+                deleteBtn.className = 'action-btn delete';
+                deleteBtn.dataset.id = reg.id;
+                deleteBtn.dataset.action = 'hard-delete';
+                actionsCell.appendChild(deleteBtn);
+            }
+        });
+        
+        // Ajouter l'écouteur d'événement au conteneur de la table
+        regListBody.removeEventListener('click', handleRegistrationAction); 
+        regListBody.addEventListener('click', handleRegistrationAction);
+    };
+    
+    // --- Gestion des Actions (Soft Delete, Hard Delete, Restore) ---
+    const handleRegistrationAction = async (e) => {
+        const target = e.target.closest('.action-btn');
+        if (!target) return;
+
+        const id = target.dataset.id;
+        const action = target.dataset.action;
+        const buttonText = target.textContent;
+        
+        let confirmMessage;
+        let confirmAction = true;
+
+        switch (action) {
+            case 'soft-delete':
+                confirmMessage = 'Êtes-vous sûr de vouloir déplacer cet inscrit dans la corbeille ?';
+                break;
+            case 'restore':
+                confirmMessage = 'Êtes-vous sûr de vouloir restaurer cet inscrit ?';
+                confirmAction = true; // Pas besoin de confirmation forte
+                break;
+            case 'hard-delete':
+                confirmMessage = 'ATTENTION : La suppression est DÉFINITIVE. Continuer ?';
+                confirmAction = confirm('Êtes-vous sûr de vouloir SUPPRIMER DÉFINITIVEMENT cet inscrit ? Cette action est irréversible.');
+                break;
+            default:
+                return;
+        }
+
+        if (!confirmAction) return;
+
+        target.disabled = true;
+        target.textContent = 'En cours...';
+        adminMessageFeedback.textContent = '';
+        adminMessageFeedback.className = 'message';
 
         try {
-            const response = await fetch(`${API_BASE_URL}/adminLogin`, {
+            const response = await fetch(`${API_BASE_URL}/updateRegistrationStatus`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password }),
+                headers: { 
+                    'Content-Type': 'application/json',
+                    // Le cookie est automatiquement inclus par le navigateur s'il est défini
+                },
+                body: JSON.stringify({ id: id, action: action }),
             });
 
             const result = await response.json();
 
             if (!response.ok) {
-                throw new Error(result.message || 'Erreur.');
+                throw new Error(result.message || 'Erreur d\'action.');
             }
 
-            // Simule une session admin (non sécurisé, mais suit votre implémentation)
-            sessionStorage.setItem('adminLoggedIn', 'true'); 
-            await loadAdminData(); 
+            adminMessageFeedback.textContent = result.message;
+            adminMessageFeedback.className = 'message success';
+            await loadAdminData(); // Recharger les données et l'UI
 
         } catch (error) {
-            loginMessageFeedback.textContent = error.message;
-            loginMessageFeedback.className = 'message error';
-            loginButton.disabled = false;
-            loginButton.textContent = 'Se Connecter';
+            adminMessageFeedback.textContent = error.message;
+            adminMessageFeedback.className = 'message error';
+            target.textContent = buttonText;
+        } finally {
+            target.disabled = false;
         }
     };
 
-    const handleLogout = () => {
-        sessionStorage.removeItem('adminLoggedIn');
-        showLogin();
-    };
 
-    // --- Chargement des données ---
-
+    // --- Chargement des données Admin ---
     const loadAdminData = async () => {
-        adminMessageFeedback.textContent = 'Chargement...';
-        adminMessageFeedback.className = 'message';
-
         try {
-            // Utilise getEmails car il renvoie settings ET registrations
-            const response = await fetch(`${API_BASE_URL}/getEmails`); 
+            // Utiliser le nouveau endpoint qui renvoie TOUTES les inscriptions et les settings
+            const response = await fetch(`${API_BASE_URL}/getAdminData`); 
+            
+            // ... (Conservez la logique de vérification de session et de mise à jour des settings) ...
+             if (response.status === 403) {
+                // Si la session est expirée ou non valide
+                adminDashboard.classList.add('hidden');
+                loginFormContainer.classList.remove('hidden');
+                return;
+            }
+
+            if (!response.ok) throw new Error('Erreur de chargement des données Admin.');
+
             const data = await response.json();
-
-            if (!response.ok) throw new Error('Erreur connexion données.');
-
+            ALL_REGISTRATIONS = data.registrations;
             CURRENT_SETTINGS = data.settings;
-            const registrations = data.registrations;
-
-            const passwordHashExists = CURRENT_SETTINGS.admin_password;
-
-            // Logique de connexion
-            if (passwordHashExists && sessionStorage.getItem('adminLoggedIn') !== 'true') {
-                return showLogin('Accès restreint. Connectez-vous.');
-            } else if (!passwordHashExists) {
-                showDashboard();
-                adminMessageFeedback.textContent = "ATTENTION : Définissez un mot de passe Admin.";
-                adminMessageFeedback.className = 'message error';
-            } else {
-                showDashboard();
-                adminMessageFeedback.textContent = 'Dashboard à jour.';
-                adminMessageFeedback.className = 'message success';
-            }
-
-            // Remplissage des Champs Settings
-            titleInput.value = CURRENT_SETTINGS.title_text || '';
-            buttonInput.value = CURRENT_SETTINGS.button_text || '';
-
-            // NOUVEAU: Champs de texte pour le statut
-            statusTitleInput.value = CURRENT_SETTINGS.status_title || '';
-            statusTextInput.value = CURRENT_SETTINGS.status_text || '';
-
-            // NOUVEAU: Champs de texte pour la limite atteinte
-            limitTitleInput.value = CURRENT_SETTINGS.limit_title || '';
-            limitMessageInput.value = CURRENT_SETTINGS.limit_message || '';
             
-            // Champs numériques et booléens
-            maxUsersInput.value = CURRENT_SETTINGS.max_users || 5;
-            regOpenInput.checked = CURRENT_SETTINGS.registration_open;
-            reqFNameInput.checked = CURRENT_SETTINGS.require_first_name;
-            reqLNameInput.checked = CURRENT_SETTINGS.require_last_name;
-            reqPhoneInput.checked = CURRENT_SETTINGS.require_phone;
-            passwordInput.value = ''; 
+            // Afficher le tableau de bord
+            adminDashboard.classList.remove('hidden');
+            loginFormContainer.classList.add('hidden');
 
-            // Compteurs
-            adminRegCount.textContent = registrations.length;
-            adminMaxCount.textContent = CURRENT_SETTINGS.max_users;
+            // 1. Mettre à jour les champs de settings
+            titleInput.value = data.settings.title_text || '';
+            buttonInput.value = data.settings.button_text || '';
+            statusTitleInput.value = data.settings.status_title || '';
+            statusTextInput.value = data.settings.status_text || '';
+            limitTitleInput.value = data.settings.limit_title || '';
+            limitMessageInput.value = data.settings.limit_message || '';
 
-            // Table Colonnes (Afficher/Cacher selon les exigences)
-            thFName.classList.toggle('hidden', !CURRENT_SETTINGS.require_first_name);
-            thLName.classList.toggle('hidden', !CURRENT_SETTINGS.require_last_name);
-            thPhone.classList.toggle('hidden', !CURRENT_SETTINGS.require_phone);
-
-            // Remplissage Table
-            regListBody.innerHTML = '';
+            maxUsersInput.value = data.settings.max_users || 5;
+            regOpenInput.checked = data.settings.registration_open;
+            reqFNameInput.checked = data.settings.require_first_name;
+            reqLNameInput.checked = data.settings.require_last_name;
+            reqPhoneInput.checked = data.settings.require_phone;
             
-            if (registrations.length === 0) {
-                // S'assurer que le colspan est de 5 (Email, Prénom, Nom, Numéro, Actions)
-                const totalColumns = 5; 
-                regListBody.innerHTML = `<tr><td colspan="${totalColumns}" style="text-align:center">Aucun inscrit actif.</td></tr>`;
-            } else {
-                registrations.forEach(reg => {
-                    const tr = document.createElement('tr');
-                    
-                    // Code HTML pour une ligne (email, nom, tel, actions)
-                    let html = `
-                        <td class="cell-with-copy">
-                            <span>${reg.email}</span>
-                            <button class="copy-btn" onclick="copyToClipboard('${reg.email.replace(/'/g, "\\'")}')" title="Copier l'email">📋</button>
-                        </td>`;
+            // 2. Mettre à jour l'affichage des colonnes du tableau
+            thFirstName.classList.toggle('hidden', !data.settings.require_first_name);
+            thLastName.classList.toggle('hidden', !data.settings.require_last_name);
+            thPhone.classList.toggle('hidden', !data.settings.require_phone);
+            
+            // 3. Rendu du tableau (vue par défaut: 'active')
+            renderRegistrationsTable(ALL_REGISTRATIONS);
 
-                    if (CURRENT_SETTINGS.require_first_name) html += `<td>${reg.first_name || '-'}</td>`;
-                    if (CURRENT_SETTINGS.require_last_name) html += `<td>${reg.last_name || '-'}</td>`;
-                    
-                    if (CURRENT_SETTINGS.require_phone) {
-                        const phoneDisplay = reg.phone_number || '-';
-                        if(reg.phone_number) {
-                            // Assurez-vous d'échapper les caractères pour le onclick
-                            const safePhone = reg.phone_number.replace(/'/g, "\\'");
-                            html += `
-                            <td class="cell-with-copy">
-                                <span>${phoneDisplay}</span>
-                                <button class="copy-btn" onclick="copyToClipboard('${safePhone}')" title="Copier le numéro">📋</button>
-                            </td>`;
-                        } else {
-                            html += `<td>${phoneDisplay}</td>`;
-                        }
-                    }
-
-                    // Bouton Supprimer
-                    // Assurez-vous d'échapper l'email pour le onclick
-                    const safeEmail = reg.email.replace(/'/g, "\\'");
-                    html += `
-                        <td style="text-align: center;">
-                            <button class="cta-button delete-btn" onclick="deleteUser('${safeEmail}', this)">
-                                🗑️ Supprimer
-                            </button>
-                        </td>`;
-
-                    tr.innerHTML = html;
-                    regListBody.appendChild(tr);
-                });
-            }
 
         } catch (error) {
-            // Si le chargement échoue (ex: pas de mot de passe Admin configuré ou erreur Supabase)
-            showLogin(error.message);
+            console.error('Erreur loadAdminData:', error);
+            adminMessageFeedback.textContent = error.message;
+            adminMessageFeedback.className = 'message error';
+            // Si le chargement échoue, on revient au login
+            adminDashboard.classList.add('hidden');
+            loginFormContainer.classList.remove('hidden');
         }
     };
-
-    // --- Sauvegarde des paramètres ---
-
+    
+    // --- Fonction de Sauvegarde ---
     const saveSettings = async () => {
         saveButton.disabled = true;
-        adminMessageFeedback.textContent = 'Sauvegarde...';
+        adminMessageFeedback.textContent = '';
         adminMessageFeedback.className = 'message';
-
+        
         const newSettings = {
             title_text: titleInput.value.trim(),
             button_text: buttonInput.value.trim(),
-            
-            // NOUVEAU: Ajout des valeurs de texte
             status_title: statusTitleInput.value.trim(),
             status_text: statusTextInput.value.trim(),
             limit_title: limitTitleInput.value.trim(),
@@ -301,7 +286,6 @@ document.addEventListener('DOMContentLoaded', () => {
             require_first_name: reqFNameInput.checked,
             require_last_name: reqLNameInput.checked,
             require_phone: reqPhoneInput.checked,
-            // N'envoie le mot de passe que s'il a été saisi
             ...(passwordInput.value.trim() && { admin_password: passwordInput.value.trim() }) 
         };
 
@@ -317,7 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             adminMessageFeedback.textContent = 'Sauvegardé !';
             adminMessageFeedback.className = 'message success';
-            passwordInput.value = ''; // Efface le champ après sauvegarde
+            passwordInput.value = ''; 
             await loadAdminData(); 
 
         } catch (error) {
@@ -328,10 +312,72 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- Initialisation des événements ---
-    saveButton.addEventListener('click', saveSettings);
-    loginFormContainer.addEventListener('submit', handleLogin);
-    logoutBtn.addEventListener('click', handleLogout);
 
-    loadAdminData(); 
+    // --- Fonctions de Login / Logout ---
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        const password = loginPasswordInput.value.trim();
+        if (!password) return;
+
+        loginPasswordInput.disabled = true;
+        loginMessageFeedback.textContent = '';
+        loginMessageFeedback.className = 'message';
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/adminLogin`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || 'Erreur de connexion.');
+            }
+
+            // Définir le cookie de session (détails omis, seulement l'appel)
+            document.cookie = "admin_auth=VALID_ADMIN_SESSION_2024; path=/; max-age=3600; Secure; HttpOnly=false";
+            
+            loginMessageFeedback.textContent = result.message;
+            loginMessageFeedback.className = 'message success';
+            loginPasswordInput.value = ''; // Effacer le mot de passe
+            
+            await loadAdminData();
+
+        } catch (error) {
+            loginMessageFeedback.textContent = error.message;
+            loginMessageFeedback.className = 'message error';
+        } finally {
+            loginPasswordInput.disabled = false;
+        }
+    };
+
+    const handleLogout = () => {
+        // Supprimer le cookie
+        document.cookie = "admin_auth=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        adminDashboard.classList.add('hidden');
+        loginFormContainer.classList.remove('hidden');
+        adminMessageFeedback.textContent = 'Déconnexion réussie.';
+        adminMessageFeedback.className = 'message success';
+    };
+
+    // --- Gestion du changement de vue ---
+    const switchView = (view) => {
+        if (CURRENT_VIEW === view) return;
+        CURRENT_VIEW = view;
+        renderRegistrationsTable(ALL_REGISTRATIONS);
+    };
+
+
+    // --- Initialisation ---
+    saveButton.addEventListener('click', saveSettings);
+    document.getElementById('login-form').addEventListener('submit', handleLogin);
+    logoutBtn.addEventListener('click', handleLogout);
+    
+    // NOUVEAU: Écouteurs pour les boutons de vue
+    viewActiveBtn.addEventListener('click', () => switchView('active'));
+    viewTrashBtn.addEventListener('click', () => switchView('trash'));
+
+    loadAdminData();
 });

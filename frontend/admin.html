@@ -33,60 +33,63 @@
                 
                 <div class="field-control">
                     <label for="admin-title-text">Titre principal de la page :</label>
-                    <input type="text" id="admin-title-text" placeholder="Gemini Enterprise">
-                </div>
-                <div class="field-control">
-                    <label for="admin-button-text">Texte du bouton d'inscription :</label>
-                    <input type="text" id="admin-button-text" placeholder="Sécuriser ma place">
+                    <input type="text" id="admin-title-text" placeholder="Ex: Gemini Enterprise">
                 </div>
                 
-                <hr class="separator">
-                
-                <h4>Textes de Statut (Barre de Progression)</h4>
                 <div class="field-control">
-                    <label for="admin-status-title">Titre de Statut (ex: Vague 1) :</label>
-                    <input type="text" id="admin-status-title" placeholder="Accès Anticipé – Vague 1">
+                    <label for="admin-button-text">Texte du bouton CTA :</label>
+                    <input type="text" id="admin-button-text" placeholder="Ex: Sécuriser ma place">
                 </div>
-                <div class="field-control">
-                    <label for="admin-status-text">Texte de Progression (ex: places restantes) :</label>
-                    <input type="text" id="admin-status-text" placeholder="places restantes">
-                </div>
-                
+
                 <hr class="separator">
 
-                <h4>Textes Limite Atteinte</h4>
-                <div class="field-control">
-                    <label for="admin-limit-title">Titre Limite Atteinte :</label>
-                    <input type="text" id="admin-limit-title" placeholder="L’offre est terminée !">
+                <h4>Section Statut et Progression</h4>
+                 <div class="field-control">
+                    <label for="admin-status-title">Titre du statut (Au-dessus de la barre) :</label>
+                    <input type="text" id="admin-status-title" placeholder="Ex: Accès Anticipé – Vague 1">
                 </div>
-                <div class="field-control">
-                    <label for="admin-limit-message">Message Limite Atteinte :</label>
-                    <input type="text" id="admin-limit-message" placeholder="Retourne sur la chaîne...">
+                 <div class="field-control">
+                    <label for="admin-status-text">Texte "places restantes" :</label>
+                    <input type="text" id="admin-status-text" placeholder="Ex: places restantes">
                 </div>
-                
+
                 <hr class="separator">
 
-                <h4>Gestion des Inscriptions</h4>
+                <h4>Section Limite Atteinte</h4>
                 <div class="field-control">
-                    <label for="admin-max-users">Limite Max d'inscrits :</label>
-                    <input type="number" id="admin-max-users" min="1" value="5">
+                    <label for="admin-limit-title">Titre de la limite atteinte :</label>
+                    <input type="text" id="admin-limit-title" placeholder="Ex: L’offre est terminée !">
+                </div>
+                <div class="field-control">
+                    <label for="admin-limit-message">Message de la limite atteinte :</label>
+                    <input type="text" id="admin-limit-message" placeholder="Ex: Retourne sur la chaîne...">
+                </div>
+
+                <hr class="separator">
+
+                <h4>Limites & Champs Requis</h4>
+                <div class="field-control">
+                    <label for="admin-max-users">Limite maximale d'inscrits :</label>
+                    <input type="number" id="admin-max-users" value="5" min="1">
                 </div>
                 
                 <div class="field-control checkbox-control">
                     <label for="admin-registration-open">Inscription Ouverte :</label>
                     <input type="checkbox" id="admin-registration-open">
                 </div>
-                
+
                 <div class="field-control checkbox-control">
                     <label for="admin-require-first-name">Exiger Prénom :</label>
                     <input type="checkbox" id="admin-require-first-name">
                 </div>
+                
                 <div class="field-control checkbox-control">
-                    <label for="admin-require-last-name">Exiger Nom :</label>
+                    <label for="admin-require-last-name">Exiger Nom de famille :</label>
                     <input type="checkbox" id="admin-require-last-name">
                 </div>
+
                 <div class="field-control checkbox-control">
-                    <label for="admin-require-phone">Exiger Téléphone :</label>
+                    <label for="admin-require-phone">Exiger Numéro de téléphone :</label>
                     <input type="checkbox" id="admin-require-phone">
                 </div>
                 
@@ -101,7 +104,11 @@
             </section>
 
             <section class="registered-list-section admin-section">
-                <h3>Liste des Inscrits Actifs (<span id="admin-registered-count">0</span> / <span id="admin-max-count">5</span>)</h3>
+                <div class="admin-views-container">
+                    <button id="view-active-btn" class="view-switch-btn active">Inscrits Actifs (<span id="admin-registered-count">0</span>)</button>
+                    <button id="view-trash-btn" class="view-switch-btn">Corbeille (<span id="admin-trash-count">0</span>)</button>
+                </div>
+                
                 <div class="table-container">
                     <table class="admin-table">
                         <thead>
@@ -110,7 +117,7 @@
                                 <th id="th-first-name" class="hidden">Prénom</th>
                                 <th id="th-last-name" class="hidden">Nom</th>
                                 <th id="th-phone" class="hidden">Numéro</th>
-                                <th>Actions</th>
+                                <th id="th-actions">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="admin-registrations-list">
