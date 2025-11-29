@@ -1,9 +1,7 @@
 // netlify/functions/addEmail.js
 const { createClient } = require('@supabase/supabase-js');
 
-// Les variables d'environnement sont lues par Netlify
 const supabaseUrl = process.env.SUPABASE_URL;
-// IMPORTANT : Utiliser la clé avec rôle de service pour les mutations de données
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY; 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -21,69 +19,75 @@ exports.handler = async (event, context) => {
     const body = JSON.parse(event.body || '{}');
     const email = (body.email || '').trim().toLowerCase();
     
-    // 1. Lire les paramètres dynamiques (Limite, Texte, Champs Requis)
+    // 1. Lire les paramètres
     const { data: settings, error: settingsError } = await supabase
         .from('settings')
         .select('*')
         .eq('id', 1)
         .single();
     
-    if (settingsError) {
-        // Cette erreur est corrigée par la création de la ligne ID=1 dans Supabase
-        console.error('Erreur lecture settings:', settingsError);
-        throw new Error('Erreur de connexion aux données. (Vérifiez la ligne ID=1 dans la table settings)');
-    }
+    if (settingsError) throw new Error('Erreur configuration settings (ID=1).');
 
     const MAX_USERS = settings.max_users || 5;
 
-    // Vérification de l'ouverture des inscriptions
     if (!settings.registration_open) {
         return {
             statusCode: 403,
-            body: JSON.stringify({ message: settings.limit_message || 'Désolé, les inscriptions sont actuellement fermées.' }),
+            body: JSON.stringify({ message: settings.limit_message || 'Inscriptions fermées.' }),
         };
     }
     
-    // 2. Validation de l'email
+    // 2. Validation Email
     if (!isValidEmail(email)) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ message: 'Veuillez entrer une adresse e-mail valide.' }),
+        body: JSON.stringify({ message: 'Email invalide.' }),
       };
     }
     
-    // 3. Collecter les données et valider les champs requis
-    const registrationData = { email: email };
+    // 3. Champs requis
+    const registrationData = { email: email, status: 'active' }; // Force le statut active
     
-    // Prénom
     if (settings.require_first_name) {
-        if (!body.first_name || body.first_name.trim() === '') {
-            return { statusCode: 400, body: JSON.stringify({ message: 'Le Prénom est requis.' }) };
-        }
+        if (!body.first_name?.trim()) return { statusCode: 400, body: JSON.stringify({ message: 'Prénom requis.' }) };
         registrationData.first_name = body.first_name.trim();
     }
-    
-    // Nom de famille
     if (settings.require_last_name) {
-        if (!body.last_name || body.last_name.trim() === '') {
-            return { statusCode: 400, body: JSON.stringify({ message: 'Le Nom de famille est requis.' }) };
-        }
+        if (!body.last_name?.trim()) return { statusCode: 400, body: JSON.stringify({ message: 'Nom requis.' }) };
         registrationData.last_name = body.last_name.trim();
     }
-    
-    // Téléphone
     if (settings.require_phone) {
-        if (!body.phone_number || body.phone_number.trim() === '') {
-            return { statusCode: 400, body: JSON.stringify({ message: 'Le Numéro de téléphone est requis.' }) };
-        }
+        if (!body.phone_number?.trim()) return { statusCode: 400, body: JSON.stringify({ message: 'Téléphone requis.' }) };
         registrationData.phone_number = body.phone_number.trim();
     }
 
+    // 4. Vérifier si l'email existe déjà (Active ou Trash)
+    const { data: existingUser } = await supabase
+      .from('registrations')
+      .select('email, status')
+      .eq('email', email)
+      .maybeSingle(); // maybeSingle évite une erreur si pas trouvé
 
-    // 4. Vérifier le nombre actuel d'inscrits
+    if (existingUser) {
+      // LOGIQUE SPECIFIQUE DEMANDÉE
+      if (existingUser.status === 'trashed') {
+          return {
+              statusCode: 409, // Conflict
+              body: JSON.stringify({ message: "Cet email a déjà bénéficié de cette offre. Vérifiez vos messages mail ou contactez l'équipe Hackers Academy X." }),
+          };
+      } else {
+          return {
+            statusCode: 409,
+            body: JSON.stringify({ message: 'Cet email est déjà inscrit.' }),
+          };
+      }
+    }
+
+    // 5. Vérifier le nombre actuel d'inscrits ACTIFS seulement
     const { count, error: countError } = await supabase
       .from('registrations')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'active'); // On ne compte que les actifs
 
     if (countError) throw countError;
 
@@ -94,20 +98,6 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // 5. Vérifier si l'email existe déjà
-    const { data: existingUser } = await supabase
-      .from('registrations')
-      .select('email')
-      .eq('email', email)
-      .single();
-
-    if (existingUser) {
-      return {
-        statusCode: 409,
-        body: JSON.stringify({ message: 'Cet email est déjà inscrit.' }),
-      };
-    }
-
     // 6. Ajouter l'inscription
     const { error: insertError } = await supabase
       .from('registrations')
@@ -115,19 +105,16 @@ exports.handler = async (event, context) => {
 
     if (insertError) throw insertError;
 
-    // 7. Succès
     return {
       statusCode: 201,
-      body: JSON.stringify({
-        message: 'Félicitations ! Votre place est réservée.',
-      }),
+      body: JSON.stringify({ message: 'Félicitations ! Votre place est réservée.' }),
     };
 
   } catch (error) {
     console.error('Erreur addEmail:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: error.message || 'Erreur serveur lors de l\'enregistrement.' }),
+      body: JSON.stringify({ message: error.message || 'Erreur serveur.' }),
     };
   }
 };

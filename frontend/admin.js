@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const reqFNameInput = document.getElementById('admin-require-first-name');
     const reqLNameInput = document.getElementById('admin-require-last-name');
     const reqPhoneInput = document.getElementById('admin-require-phone');
-    const passwordInput = document.getElementById('admin-password-input'); // Champ de NOUVEAU mot de passe
+    const passwordInput = document.getElementById('admin-password-input');
 
     // Connexion
     const loginButton = document.getElementById('login-btn');
@@ -30,15 +30,63 @@ document.addEventListener('DOMContentLoaded', () => {
     const thLName = document.getElementById('th-last-name');
     const thPhone = document.getElementById('th-phone');
 
-
     const API_BASE_URL = '/api';
     let CURRENT_SETTINGS = {};
 
-    // --- Fonctions d'affichage ---
+    // --- Fonctions Utilitaires ---
+
+    // Fonction pour copier dans le presse-papier
+    window.copyToClipboard = (text) => {
+        if (!text) return;
+        navigator.clipboard.writeText(text).then(() => {
+            // Petit feedback visuel temporaire
+            const originalText = adminMessageFeedback.textContent;
+            adminMessageFeedback.textContent = `Copié : ${text}`;
+            adminMessageFeedback.className = 'message success';
+            setTimeout(() => {
+                adminMessageFeedback.textContent = originalText;
+                adminMessageFeedback.className = 'message';
+            }, 2000);
+        }).catch(err => {
+            console.error('Erreur copie:', err);
+            adminMessageFeedback.textContent = 'Erreur lors de la copie.';
+            adminMessageFeedback.className = 'message error';
+        });
+    };
+
+    // Fonction pour supprimer (Trash)
+    window.deleteUser = async (email, btnElement) => {
+        if (!confirm(`Voulez-vous vraiment déplacer ${email} dans la corbeille ? Il ne pourra pas se réinscrire.`)) return;
+
+        btnElement.disabled = true;
+        btnElement.textContent = '...';
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/deleteEmail`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email }),
+            });
+
+            if (!response.ok) throw new Error('Erreur suppression');
+
+            // Recharger les données pour mettre à jour la liste
+            await loadAdminData();
+
+        } catch (error) {
+            console.error(error);
+            alert("Erreur lors de la suppression.");
+            btnElement.disabled = false;
+            btnElement.textContent = 'Supprimer';
+        }
+    };
+
+    // --- Affichage ---
 
     const showLogin = (message = null) => {
         loginFormContainer.classList.remove('hidden');
         adminDashboard.classList.add('hidden');
+        logoutBtn.style.display = 'none'; // Cacher le bouton déconnexion
         if (message) {
             loginMessageFeedback.textContent = message;
             loginMessageFeedback.className = 'message error';
@@ -54,6 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const showDashboard = () => {
         loginFormContainer.classList.add('hidden');
         adminDashboard.classList.remove('hidden');
+        logoutBtn.style.display = 'inline-block'; // Afficher le bouton déconnexion
     };
 
     // --- Logique de connexion ---
@@ -70,8 +119,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         loginButton.disabled = true;
         loginButton.textContent = 'Connexion...';
-        loginMessageFeedback.textContent = '';
-        loginMessageFeedback.className = 'message';
 
         try {
             const response = await fetch(`${API_BASE_URL}/adminLogin`, {
@@ -83,7 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (!response.ok) {
-                throw new Error(result.message || 'Mot de passe incorrect ou erreur.');
+                throw new Error(result.message || 'Erreur.');
             }
 
             sessionStorage.setItem('adminLoggedIn', 'true');
@@ -102,43 +149,36 @@ document.addEventListener('DOMContentLoaded', () => {
         showLogin();
     };
 
-
-    // --- Logique de Chargement/Affichage du Dashboard ---
+    // --- Chargement des données ---
 
     const loadAdminData = async () => {
-        adminMessageFeedback.textContent = 'Chargement des données...';
+        adminMessageFeedback.textContent = 'Chargement...';
         adminMessageFeedback.className = 'message';
 
         try {
             const response = await fetch(`${API_BASE_URL}/getEmails`);
             const data = await response.json();
 
-            if (!response.ok) {
-                throw new Error(data.message || 'Erreur de connexion aux données. (Vérifiez la ligne ID=1 dans la table settings)');
-            }
+            if (!response.ok) throw new Error('Erreur connexion données.');
 
             CURRENT_SETTINGS = data.settings;
             const registrations = data.registrations;
 
-            // 1. Logique d'affichage (Connexion vs Configuration)
             const passwordHashExists = CURRENT_SETTINGS.admin_password;
 
             if (passwordHashExists && sessionStorage.getItem('adminLoggedIn') !== 'true') {
-                // Si le mot de passe existe MAIS l'utilisateur n'est PAS connecté
-                return showLogin('Accès restreint. Veuillez vous connecter.');
+                return showLogin('Accès restreint. Connectez-vous.');
             } else if (!passwordHashExists) {
-                // Si le mot de passe n'existe PAS (Première configuration)
                 showDashboard();
-                adminMessageFeedback.textContent = "ATTENTION : Veuillez définir un mot de passe Admin ci-dessous pour sécuriser l'accès.";
+                adminMessageFeedback.textContent = "ATTENTION : Définissez un mot de passe Admin.";
                 adminMessageFeedback.className = 'message error';
             } else {
-                // Si le mot de passe existe ET l'utilisateur est connecté
                 showDashboard();
-                adminMessageFeedback.textContent = 'Dashboard chargé.';
+                adminMessageFeedback.textContent = 'Dashboard à jour.';
                 adminMessageFeedback.className = 'message success';
             }
 
-            // 2. Mise à jour des champs du formulaire
+            // Champs Settings
             titleInput.value = CURRENT_SETTINGS.title_text || '';
             buttonInput.value = CURRENT_SETTINGS.button_text || '';
             maxUsersInput.value = CURRENT_SETTINGS.max_users || 5;
@@ -146,49 +186,78 @@ document.addEventListener('DOMContentLoaded', () => {
             reqFNameInput.checked = CURRENT_SETTINGS.require_first_name;
             reqLNameInput.checked = CURRENT_SETTINGS.require_last_name;
             reqPhoneInput.checked = CURRENT_SETTINGS.require_phone;
-            passwordInput.value = ''; // Jamais pré-rempli pour la sécurité
+            passwordInput.value = ''; 
 
-            // 3. Affichage de la liste des inscrits
+            // Compteurs
             adminRegCount.textContent = registrations.length;
             adminMaxCount.textContent = CURRENT_SETTINGS.max_users;
 
-            // Affichage conditionnel des colonnes
+            // Table Colonnes
             thFName.classList.toggle('hidden', !CURRENT_SETTINGS.require_first_name);
             thLName.classList.toggle('hidden', !CURRENT_SETTINGS.require_last_name);
             thPhone.classList.toggle('hidden', !CURRENT_SETTINGS.require_phone);
 
+            // Remplissage Table
             regListBody.innerHTML = '';
-            registrations.forEach(reg => {
-                const tr = document.createElement('tr');
-                let html = `<td>${reg.email}</td>`;
+            
+            if (registrations.length === 0) {
+                regListBody.innerHTML = '<tr><td colspan="5" style="text-align:center">Aucun inscrit actif.</td></tr>';
+            } else {
+                registrations.forEach(reg => {
+                    const tr = document.createElement('tr');
+                    
+                    // Email avec bouton Copier
+                    let html = `
+                        <td class="cell-with-copy">
+                            <span>${reg.email}</span>
+                            <button class="copy-btn" onclick="copyToClipboard('${reg.email}')" title="Copier l'email">📋</button>
+                        </td>`;
 
-                if (CURRENT_SETTINGS.require_first_name) html += `<td>${reg.first_name || 'N/A'}</td>`;
-                if (CURRENT_SETTINGS.require_last_name) html += `<td>${reg.last_name || 'N/A'}</td>`;
-                if (CURRENT_SETTINGS.require_phone) html += `<td>${reg.phone_number || 'N/A'}</td>`;
+                    if (CURRENT_SETTINGS.require_first_name) html += `<td>${reg.first_name || '-'}</td>`;
+                    if (CURRENT_SETTINGS.require_last_name) html += `<td>${reg.last_name || '-'}</td>`;
+                    
+                    // Téléphone avec bouton Copier (si requis)
+                    if (CURRENT_SETTINGS.require_phone) {
+                        const phoneDisplay = reg.phone_number || '-';
+                        if(reg.phone_number) {
+                            html += `
+                            <td class="cell-with-copy">
+                                <span>${phoneDisplay}</span>
+                                <button class="copy-btn" onclick="copyToClipboard('${reg.phone_number}')" title="Copier le numéro">📋</button>
+                            </td>`;
+                        } else {
+                            html += `<td>${phoneDisplay}</td>`;
+                        }
+                    }
 
-                html += `<td><button class="cta-button" style="padding: 5px 10px; font-size: 0.8rem; background: var(--error-color);">Supprimer</button></td>`;
+                    // Bouton Supprimer (Trash)
+                    html += `
+                        <td style="text-align: center;">
+                            <button class="cta-button delete-btn" onclick="deleteUser('${reg.email}', this)">
+                                🗑️ Supprimer
+                            </button>
+                        </td>`;
 
-                tr.innerHTML = html;
-                regListBody.appendChild(tr);
-            });
-
+                    tr.innerHTML = html;
+                    regListBody.appendChild(tr);
+                });
+            }
 
         } catch (error) {
             showLogin(error.message);
         }
     };
 
-    // --- Logique de Sauvegarde ---
+    // --- Sauvegarde ---
 
     const saveSettings = async () => {
         saveButton.disabled = true;
-        adminMessageFeedback.textContent = 'Sauvegarde en cours...';
+        adminMessageFeedback.textContent = 'Sauvegarde...';
         adminMessageFeedback.className = 'message';
 
         const newSettings = {
             title_text: titleInput.value.trim(),
             button_text: buttonInput.value.trim(),
-            limit_message: CURRENT_SETTINGS.limit_message || "Désolé, toutes les places sont prises.", 
             max_users: parseInt(maxUsersInput.value, 10),
             registration_open: regOpenInput.checked,
             require_first_name: reqFNameInput.checked,
@@ -205,12 +274,9 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const result = await response.json();
+            if (!response.ok) throw new Error(result.message);
 
-            if (!response.ok) {
-                throw new Error(result.message || 'Erreur lors de la sauvegarde.');
-            }
-
-            adminMessageFeedback.textContent = result.message || 'Paramètres sauvegardés !';
+            adminMessageFeedback.textContent = 'Sauvegardé !';
             adminMessageFeedback.className = 'message success';
             passwordInput.value = ''; 
             await loadAdminData(); 
@@ -223,7 +289,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- Initialisation ---
     saveButton.addEventListener('click', saveSettings);
     loginFormContainer.addEventListener('submit', handleLogin);
     logoutBtn.addEventListener('click', handleLogout);
