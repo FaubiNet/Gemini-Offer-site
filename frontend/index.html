@@ -8,15 +8,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <style>
-      /* Ajouter cette règle pour masquer initialement les champs dynamiques */
-      .hidden {
-          display: none !important;
-      }
-    </style>
 </head>
 <body>
     <div class="background-animation"></div>
+    
     <main class="card">
         <div class="card-header">
             <h1 class="title" id="dynamic-title">Gemini Enterprise</h1>
@@ -28,14 +23,12 @@
             <div class="progress-bar-container">
                 <div id="progress-bar" class="progress-bar"></div>
             </div>
-            <p class="status-text" id="dynamic-status-text">
-                <span id="registered-count">0</span> / <span id="max-users-count">5</span> utilisateurs enregistrés
-            </p>
-            <p class="remaining-text" id="dynamic-remaining-text">
-                Places restantes: <span id="remaining-spots">5</span>
+            <p class="status-text">
+                <span id="registered-count">0</span> / <span id="max-users-count">5</span> places prises | 
+                <span id="dynamic-remaining-text">Reste</span> <span id="remaining-spots">5</span> <span id="dynamic-status-text">places restantes</span>
             </p>
         </div>
-
+        
         <div id="registration-form-container">
             <form id="email-form">
                 <input type="text" id="first-name-input" name="first_name" placeholder="Prénom" class="dynamic-input hidden">
@@ -43,7 +36,7 @@
                 <input type="tel" id="phone-input" name="phone_number" placeholder="Numéro de téléphone" class="dynamic-input hidden">
                 
                 <input type="email" id="email-input" placeholder="ton.email@exemple.com" required autocomplete="email">
-                <button type="submit" id="submit-button">Sécuriser ma place</button>
+                <button type="submit" id="submit-button" class="cta-button">Sécuriser ma place</button>
             </form>
             <p id="message-feedback" class="message"></p>
         </div>
@@ -59,10 +52,10 @@
         <div class="registered-list-section">
             <h3 id="list-title">Liste des inscrits :</h3>
             <ul id="email-list">
-                </ul>
+                <li id="empty-list-message" class="empty-message">Personne n'est inscrit. Soyez le premier !</li>
+            </ul>
         </div>
     </main>
-
     <script src="script.js"></script>
 </body>
 </html>

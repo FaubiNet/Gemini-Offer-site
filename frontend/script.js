@@ -13,6 +13,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const registrationFormContainer = document.getElementById('registration-form-container');
     const limitReachedContainer = document.getElementById('limit-reached-container');
     
+    // NOUVEAU: Élément pour le message de liste vide
+    const emptyListMessageEl = document.getElementById('empty-list-message'); 
+    
     // IDs pour les textes dynamiques
     const dynamicTitleEl = document.getElementById('dynamic-title');
     const statusTitleEl = document.getElementById('status-title'); 
@@ -34,9 +37,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const updateUI = (settings, registrations) => {
         const count = registrations.length;
-        MAX_USERS = settings.max_users || 5;
+        // S'assurer que MAX_USERS est un nombre valide
+        MAX_USERS = parseInt(settings.max_users) || 5; 
         const remaining = Math.max(0, MAX_USERS - count);
-        const percentage = (count / MAX_USERS) * 100;
+        const percentage = (MAX_USERS > 0) ? (count / MAX_USERS) * 100 : 0; // Éviter la division par zéro
 
         // 1. Mettre à jour les textes dynamiques
         dynamicTitleEl.textContent = settings.title_text || 'Gemini Enterprise';
@@ -78,11 +82,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 5. Afficher la liste des inscrits
         emailListEl.innerHTML = '';
-        registrations.forEach(reg => {
+        if (count === 0) {
+            // Afficher le message d'absence d'inscrits
             const li = document.createElement('li');
-            li.textContent = reg.email;
+            li.id = 'empty-list-message';
+            li.className = 'empty-message';
+            li.textContent = 'Personne n\'est inscrit. Soyez le premier !';
             emailListEl.appendChild(li);
-        });
+        } else {
+            // Afficher les inscrits
+            registrations.forEach(reg => {
+                const li = document.createElement('li');
+                li.textContent = reg.email;
+                emailListEl.appendChild(li);
+            });
+        }
     };
 
     // --- Chargement des données ---
@@ -101,6 +115,14 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Erreur fetchEmails:', error);
             messageFeedbackEl.textContent = 'Erreur: Impossible de charger les données de la campagne.';
             messageFeedbackEl.className = 'message error';
+            
+            // Initialiser les comptes même en cas d'erreur de chargement pour éviter l'absence de nombres
+            maxUsersCountEl.textContent = MAX_USERS; 
+            registeredCountEl.textContent = 0;
+            remainingSpotsEl.textContent = MAX_USERS;
+            
+            // Afficher le message de liste vide
+            emailListEl.innerHTML = '<li id="empty-list-message" class="empty-message">Impossible de charger la liste.</li>';
         }
     };
 
@@ -110,7 +132,6 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         
         const email = emailInput.value.trim().toLowerCase();
-        // Récupérer les valeurs des champs optionnels/requis
         const first_name = firstNameInput.value.trim();
         const last_name = lastNameInput.value.trim();
         const phone_number = phoneInput.value.trim();
@@ -122,7 +143,6 @@ document.addEventListener('DOMContentLoaded', () => {
         messageFeedbackEl.textContent = '';
         messageFeedbackEl.className = 'message';
 
-        // Construire l'objet de données à envoyer
         const bodyData = { email };
         if (CURRENT_SETTINGS.require_first_name) bodyData.first_name = first_name;
         if (CURRENT_SETTINGS.require_last_name) bodyData.last_name = last_name;
@@ -144,19 +164,17 @@ document.addEventListener('DOMContentLoaded', () => {
             messageFeedbackEl.textContent = result.message;
             messageFeedbackEl.className = 'message success';
             
-            // Réinitialisation des inputs
             emailInput.value = '';
             firstNameInput.value = '';
             lastNameInput.value = '';
             phoneInput.value = '';
             
-            await fetchEmails(); // Mise à jour de l'UI
+            await fetchEmails();
 
         } catch (error) {
             messageFeedbackEl.textContent = error.message;
             messageFeedbackEl.className = 'message error';
         } finally {
-            // Réactiver le bouton si la campagne est toujours ouverte
             if (parseInt(registeredCountEl.textContent, 10) < MAX_USERS && CURRENT_SETTINGS.registration_open) {
                 submitButton.disabled = false;
                 submitButton.textContent = CURRENT_SETTINGS.button_text || 'Sécuriser ma place';
@@ -165,5 +183,5 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     emailForm.addEventListener('submit', handleFormSubmit);
-    fetchEmails(); // Chargement initial
+    fetchEmails();
 });

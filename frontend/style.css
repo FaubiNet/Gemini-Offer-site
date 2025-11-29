@@ -10,7 +10,7 @@
     --error-color: #ff4d4d;
     --button-bg: #0077ff;
     --button-hover: #005fcc;
-    --input-bg: rgba(0, 0, 0, 0.3); /* Nouvelle variable pour un fond d'input unifié */
+    --input-bg: rgba(0, 0, 0, 0.3);
 }
 
 * {
@@ -65,7 +65,7 @@ body {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     width: 100%;
-    max-width: 450px; /* Taille idéale pour mobile/desktop */
+    max-width: 450px; 
     z-index: 10;
 }
 
@@ -134,12 +134,11 @@ body {
 /* FIX pour le bouton du formulaire utilisateur */
 #submit-button {
     width: 100%;
-    /* Utilise les styles de .cta-button */
 }
 
 .cta-button:hover, #submit-button:hover {
     background: var(--button-hover);
-    transform: translateY(-1px); /* Effet moderne */
+    transform: translateY(-1px); 
 }
 
 .cta-button:disabled, #submit-button:disabled {
@@ -233,6 +232,15 @@ body {
     border-bottom: 1px dotted rgba(255, 255, 255, 0.05);
 }
 
+/* NOUVEAU STYLE pour le message de liste vide */
+#email-list li.empty-message {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 1rem 0;
+    font-style: italic;
+    border: none;
+}
+
 /* --- LIMITE ATTEINTE --- */
 #limit-reached-container {
     text-align: center;
@@ -260,7 +268,7 @@ body {
 /* ==================================== */
 
 .admin-card {
-    max-width: 700px; /* Plus large pour l'administration */
+    max-width: 700px;
 }
 
 .admin-header {
@@ -317,8 +325,8 @@ body {
 /* Cible tous les champs texte/nombre/password dans l'admin */
 .admin-card .field-control input:not([type="checkbox"]) {
     flex: 2;
-    max-width: 50%; /* Limiter la largeur des inputs sur desktop */
-    font-size: 0.95rem; /* Rendre plus compact */
+    max-width: 50%;
+    font-size: 0.95rem;
 }
 
 /* LOGIN FORM ADMIN */
@@ -354,14 +362,14 @@ body {
 
 /* TABLEAU DES INSCRITS */
 .table-container {
-    overflow-x: auto; /* Permet le scroll horizontal sur mobile */
+    overflow-x: auto;
 }
 
 .admin-table { 
     width: 100%; 
     border-collapse: collapse; 
     margin-top: 1rem; 
-    min-width: 650px; /* Force le scroll sur les petits écrans pour plus de lisibilité */
+    min-width: 650px;
 }
 
 .admin-table th, .admin-table td { 
@@ -387,7 +395,7 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
-    white-space: nowrap; /* Empêche le wrap de l'email */
+    white-space: nowrap;
 }
 
 .copy-btn {
@@ -409,7 +417,6 @@ body {
     background: var(--error-color);
     font-size: 0.8rem;
     padding: 0.5rem;
-    /* Assure que delete-btn utilise les styles de cta-button */
 }
 .delete-btn:hover {
     background: #cc3939;
