@@ -226,7 +226,9 @@ document.addEventListener('DOMContentLoaded', () => {
             regListBody.innerHTML = '';
             
             if (registrations.length === 0) {
-                regListBody.innerHTML = '<tr><td colspan="5" style="text-align:center">Aucun inscrit actif.</td></tr>';
+                // S'assurer que le colspan est de 5 (Email, Prénom, Nom, Numéro, Actions)
+                const totalColumns = 5; 
+                regListBody.innerHTML = `<tr><td colspan="${totalColumns}" style="text-align:center">Aucun inscrit actif.</td></tr>`;
             } else {
                 registrations.forEach(reg => {
                     const tr = document.createElement('tr');
@@ -254,11 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         } else {
                             html += `<td>${phoneDisplay}</td>`;
                         }
-                    } else if (!CURRENT_SETTINGS.require_first_name && !CURRENT_SETTINGS.require_last_name && !CURRENT_SETTINGS.require_phone) {
-                         // Si tout est masqué, le téléphone reste affiché pour l'espace si c'est la 4e colonne
-                        html += `<td>-</td>`; 
                     }
-
 
                     // Bouton Supprimer
                     // Assurez-vous d'échapper l'email pour le onclick
