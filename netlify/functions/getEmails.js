@@ -1,49 +1,34 @@
-const fs = require('fs');
-const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
 
-// Fichier JSON livré avec le code (lecture seule)
-const BUNDLE_EMAILS_PATH = path.resolve(__dirname, 'emails.json');
-// Fichier JSON runtime (écrit par addEmail dans /tmp)
-const RUNTIME_EMAILS_PATH = '/tmp/emails.json';
-
-const loadEmailsSync = () => {
-  try {
-    // On essaie d'abord le fichier en /tmp (mis à jour)
-    const data = fs.readFileSync(RUNTIME_EMAILS_PATH, 'utf8');
-    return JSON.parse(data);
-  } catch (err) {
-    if (err.code === 'ENOENT') {
-      // Si rien en /tmp, on lit le JSON de base du bundle
-      try {
-        const data = fs.readFileSync(BUNDLE_EMAILS_PATH, 'utf8');
-        return JSON.parse(data);
-      } catch (e2) {
-        console.error('Impossible de lire le emails.json du bundle :', e2);
-        return { emails: [] };
-      }
-    }
-    throw err;
-  }
-};
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 exports.handler = async (event, context) => {
   try {
-    const jsonData = loadEmailsSync();
+    // Récupérer tous les emails
+    const { data, error } = await supabase
+      .from('registrations')
+      .select('email')
+      .order('created_at', { ascending: true }); // Trier par date d'inscription
+
+    if (error) throw error;
+
+    // Transformer le tableau d'objets en tableau de strings simple
+    // Ex: [{email: "x@x.com"}, {email: "y@y.com"}] -> ["x@x.com", "y@y.com"]
+    const emails = data.map(row => row.email);
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(jsonData),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ emails: emails }),
     };
+
   } catch (error) {
-    console.error('Error reading emails.json:', error);
+    console.error('Erreur getEmails:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({
-        message: "Erreur interne du serveur. Impossible de récupérer les emails.",
-      }),
+      body: JSON.stringify({ message: "Erreur lors de la récupération des données." }),
     };
   }
 };

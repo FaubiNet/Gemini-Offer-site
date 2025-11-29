@@ -1,21 +1,11 @@
 [build]
-  # Ton site statique : dossier frontend
   publish = "frontend"
-  command = ""
+  command = "npm install" # Pour installer supabase-js lors du déploiement
 
-# Config globale pour toutes les fonctions
 [functions]
   directory = "netlify/functions"
+  node_bundler = "esbuild" # Recommandé pour les dépendances NPM comme Supabase
 
-# Inclure emails.json dans le bundle de la fonction addEmail
-[functions."addEmail"]
-  included_files = ["netlify/functions/emails.json"]
-
-# Inclure emails.json dans le bundle de la fonction getEmails
-[functions."getEmails"]
-  included_files = ["netlify/functions/emails.json"]
-
-# (Optionnel) redirection /api/* vers les fonctions Netlify
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"

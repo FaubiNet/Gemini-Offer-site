@@ -1,10 +1,9 @@
-const fs = require('fs/promises');
-const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
 
-// Fichier JSON livré avec le code (lecture seule)
-const BUNDLE_EMAILS_PATH = path.resolve(__dirname, 'emails.json');
-// Fichier JSON utilisé en écriture à l'exécution (dans /tmp, qui est writable)
-const RUNTIME_EMAILS_PATH = '/tmp/emails.json';
+// On récupère les variables d'environnement (configurées dans Netlify)
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const MAX_USERS = 5;
 
@@ -13,41 +12,9 @@ const isValidEmail = (email) => {
   return regex.test(email);
 };
 
-// Charge les emails : d'abord dans /tmp, sinon depuis le bundle en lecture seule
-const loadEmails = async () => {
-  try {
-    const data = await fs.readFile(RUNTIME_EMAILS_PATH, 'utf8');
-    return JSON.parse(data);
-  } catch (err) {
-    if (err.code === 'ENOENT') {
-      // Si le fichier n'existe pas encore dans /tmp, on part du JSON du bundle
-      try {
-        const data = await fs.readFile(BUNDLE_EMAILS_PATH, 'utf8');
-        return JSON.parse(data);
-      } catch (e2) {
-        console.error('Impossible de lire le emails.json du bundle :', e2);
-        return { emails: [] };
-      }
-    }
-    throw err;
-  }
-};
-
-// Sauvegarde les emails dans /tmp
-const saveEmails = async (jsonData) => {
-  await fs.writeFile(
-    RUNTIME_EMAILS_PATH,
-    JSON.stringify(jsonData, null, 2),
-    'utf8'
-  );
-};
-
 exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ message: 'Method Not Allowed' }),
-    };
+    return { statusCode: 405, body: JSON.stringify({ message: 'Method Not Allowed' }) };
   }
 
   try {
@@ -55,58 +22,65 @@ exports.handler = async (event, context) => {
     const email = (body.email || '').trim().toLowerCase();
 
     if (!isValidEmail(email)) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: 'Veuillez entrer une adresse e-mail valide.' }),
-      };
+      return { statusCode: 400, body: JSON.stringify({ message: 'Email invalide.' }) };
     }
 
-    // Charger les données existantes
-    const jsonData = await loadEmails();
-    if (!Array.isArray(jsonData.emails)) {
-      jsonData.emails = [];
-    }
+    // 1. Vérifier le nombre actuel d'inscrits
+    const { count, error: countError } = await supabase
+      .from('registrations')
+      .select('*', { count: 'exact', head: true });
 
-    // Vérifier si déjà plein
-    if (jsonData.emails.length >= MAX_USERS) {
+    if (countError) throw countError;
+
+    if (count >= MAX_USERS) {
       return {
         statusCode: 403,
-        body: JSON.stringify({
-          message: 'Le nombre maximum de participants est atteint. Désolé !',
-        }),
+        body: JSON.stringify({ message: 'Désolé, les 5 places sont prises !' }),
       };
     }
 
-    // Vérifier si email déjà inscrit
-    if (jsonData.emails.includes(email)) {
+    // 2. Vérifier si l'email existe déjà
+    const { data: existingUser } = await supabase
+      .from('registrations')
+      .select('email')
+      .eq('email', email)
+      .single();
+
+    if (existingUser) {
       return {
         statusCode: 409,
-        body: JSON.stringify({
-          message: 'Cet email est déjà inscrit.',
-        }),
+        body: JSON.stringify({ message: 'Cet email est déjà inscrit.' }),
       };
     }
 
-    // Ajouter le nouvel email
-    jsonData.emails.push(email);
+    // 3. Ajouter l'email
+    const { error: insertError } = await supabase
+      .from('registrations')
+      .insert([{ email: email }]);
 
-    // Sauvegarder dans /tmp
-    await saveEmails(jsonData);
+    if (insertError) throw insertError;
+
+    // 4. Récupérer la liste mise à jour pour le frontend
+    const { data: allUsers } = await supabase
+      .from('registrations')
+      .select('email');
+    
+    // On transforme le format [{email: 'a'}, {email: 'b'}] en ['a', 'b'] pour ton front
+    const emailList = allUsers.map(u => u.email);
 
     return {
       statusCode: 201,
       body: JSON.stringify({
         message: 'Félicitations ! Votre place est réservée.',
-        data: jsonData,
+        data: { emails: emailList } // On garde le format attendu par ton JS
       }),
     };
+
   } catch (error) {
-    console.error('Error in addEmail function:', error);
+    console.error('Erreur addEmail:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({
-        message: 'Erreur interne du serveur. Veuillez réessayer.',
-      }),
+      body: JSON.stringify({ message: 'Erreur serveur.' }),
     };
   }
 };
