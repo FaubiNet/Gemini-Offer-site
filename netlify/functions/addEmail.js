@@ -1,11 +1,10 @@
+// netlify/functions/addEmail.js
 const { createClient } = require('@supabase/supabase-js');
 
-// On récupère les variables d'environnement (configurées dans Netlify)
+// Les variables d'environnement sont lues par Netlify
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY; 
 const supabase = createClient(supabaseUrl, supabaseKey);
-
-const MAX_USERS = 5;
 
 const isValidEmail = (email) => {
   const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -20,12 +19,56 @@ exports.handler = async (event, context) => {
   try {
     const body = JSON.parse(event.body || '{}');
     const email = (body.email || '').trim().toLowerCase();
+    
+    // 1. Lire les paramètres dynamiques (Limite, Texte, Champs Requis)
+    const { data: settings, error: settingsError } = await supabase
+        .from('settings')
+        .select('*')
+        .eq('id', 1)
+        .single();
+    
+    if (settingsError) {
+        console.error('Erreur lecture settings:', settingsError);
+        throw new Error('Erreur de configuration serveur.');
+    }
 
+    // Vérification de l'ouverture des inscriptions
+    if (!settings || !settings.registration_open) {
+        return {
+            statusCode: 403,
+            body: JSON.stringify({ message: 'Désolé, les inscriptions sont actuellement fermées.' }),
+        };
+    }
+    
+    const MAX_USERS = settings.max_users || 5;
+    const registrationData = { email: email };
+
+    // 2. Validation de l'email
     if (!isValidEmail(email)) {
       return { statusCode: 400, body: JSON.stringify({ message: 'Email invalide.' }) };
     }
 
-    // 1. Vérifier le nombre actuel d'inscrits
+    // 3. Validation et ajout des champs optionnels/requis
+    if (settings.require_first_name) {
+        if (!body.first_name || body.first_name.trim() === '') {
+            return { statusCode: 400, body: JSON.stringify({ message: 'Le prénom est requis.' }) };
+        }
+        registrationData.first_name = body.first_name.trim();
+    }
+    if (settings.require_last_name) {
+        if (!body.last_name || body.last_name.trim() === '') {
+            return { statusCode: 400, body: JSON.stringify({ message: 'Le nom est requis.' }) };
+        }
+        registrationData.last_name = body.last_name.trim();
+    }
+    if (settings.require_phone) {
+        if (!body.phone_number || body.phone_number.trim() === '') {
+            return { statusCode: 400, body: JSON.stringify({ message: 'Le numéro de téléphone est requis.' }) };
+        }
+        registrationData.phone_number = body.phone_number.trim();
+    }
+
+    // 4. Vérifier le nombre actuel d'inscrits
     const { count, error: countError } = await supabase
       .from('registrations')
       .select('*', { count: 'exact', head: true });
@@ -35,11 +78,11 @@ exports.handler = async (event, context) => {
     if (count >= MAX_USERS) {
       return {
         statusCode: 403,
-        body: JSON.stringify({ message: 'Désolé, les 5 places sont prises !' }),
+        body: JSON.stringify({ message: `Désolé, les ${MAX_USERS} places sont prises !` }),
       };
     }
 
-    // 2. Vérifier si l'email existe déjà
+    // 5. Vérifier si l'email existe déjà
     const { data: existingUser } = await supabase
       .from('registrations')
       .select('email')
@@ -53,26 +96,19 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // 3. Ajouter l'email
+    // 6. Ajouter l'inscription
     const { error: insertError } = await supabase
       .from('registrations')
-      .insert([{ email: email }]);
+      .insert([registrationData]);
 
     if (insertError) throw insertError;
 
-    // 4. Récupérer la liste mise à jour pour le frontend
-    const { data: allUsers } = await supabase
-      .from('registrations')
-      .select('email');
-    
-    // On transforme le format [{email: 'a'}, {email: 'b'}] en ['a', 'b'] pour ton front
-    const emailList = allUsers.map(u => u.email);
-
+    // 7. Succès (Le frontend rechargera les données)
     return {
       statusCode: 201,
       body: JSON.stringify({
         message: 'Félicitations ! Votre place est réservée.',
-        data: { emails: emailList } // On garde le format attendu par ton JS
+        // On n'envoie plus la liste des emails, le front fait un nouvel appel getEmails
       }),
     };
 
@@ -80,7 +116,7 @@ exports.handler = async (event, context) => {
     console.error('Erreur addEmail:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: 'Erreur serveur.' }),
+      body: JSON.stringify({ message: 'Erreur serveur interne.' }),
     };
   }
 };

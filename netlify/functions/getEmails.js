@@ -1,3 +1,4 @@
+// netlify/functions/getEmails.js
 const { createClient } = require('@supabase/supabase-js');
 
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -6,22 +7,32 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 exports.handler = async (event, context) => {
   try {
-    // Récupérer tous les emails
-    const { data, error } = await supabase
+    // 1. Récupérer les paramètres (settings)
+    const { data: settings, error: settingsError } = await supabase
+        .from('settings')
+        .select('*')
+        .eq('id', 1)
+        .single();
+    
+    if (settingsError) throw settingsError;
+
+    // 2. Récupérer toutes les inscriptions
+    // On sélectionne tous les champs pour le dashboard admin
+    const { data: registrations, error: regError } = await supabase
       .from('registrations')
-      .select('email')
-      .order('created_at', { ascending: true }); // Trier par date d'inscription
+      .select('email, first_name, last_name, phone_number') 
+      .order('created_at', { ascending: true });
 
-    if (error) throw error;
+    if (regError) throw regError;
 
-    // Transformer le tableau d'objets en tableau de strings simple
-    // Ex: [{email: "x@x.com"}, {email: "y@y.com"}] -> ["x@x.com", "y@y.com"]
-    const emails = data.map(row => row.email);
-
+    // 3. Renvoie un objet contenant les deux sets de données
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ emails: emails }),
+      body: JSON.stringify({ 
+          settings: settings, 
+          registrations: registrations 
+      }),
     };
 
   } catch (error) {
