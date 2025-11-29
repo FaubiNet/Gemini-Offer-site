@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Enterprise – Hackers Academy X</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="background-animation"></div>
+    <main class="card">
+        <div class="card-header">
+            <h1 class="title">Gemini Enterprise</h1>
+            <p class="subtitle">Hackers Academy X</p>
+        </div>
+
+        <div class="status-section">
+            <h2>Accès Anticipé – Vague 1</h2>
+            <div class="progress-bar-container">
+                <div id="progress-bar" class="progress-bar"></div>
+            </div>
+            <p class="status-text">
+                <span id="registered-count">0</span> / 5 utilisateurs enregistrés
+            </p>
+            <p class="remaining-text">
+                Places restantes: <span id="remaining-spots">5</span>
+            </p>
+        </div>
+
+        <div id="registration-form-container">
+            <form id="email-form">
+                <input type="email" id="email-input" placeholder="ton.email@exemple.com" required autocomplete="email">
+                <button type="submit" id="submit-button">Sécuriser ma place</button>
+            </form>
+            <p id="message-feedback" class="message"></p>
+        </div>
+
+        <div id="limit-reached-container" class="hidden">
+            <h2 class="limit-title">🔥 L’offre Gemini Enterprise – Vague 1 est terminée !</h2>
+            <p class="limit-text">Retourne sur la chaîne Hackers Academy X pour débloquer la 2e vague.</p>
+            <a href="https://whatsapp.com/channel/0029Vb5ioJzA2pLD4CZOCq2V" target="_blank" class="cta-button">
+                Retourner à Hackers Academy X
+            </a>
+        </div>
+
+        <div class="registered-list-section">
+            <h3>Liste des inscrits :</h3>
+            <ul id="email-list">
+                <!-- Emails will be dynamically inserted here -->
+            </ul>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>

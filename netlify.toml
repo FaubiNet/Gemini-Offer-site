@@ -1,0 +1,22 @@
+[build]
+  # Ton site statique : dossier frontend
+  publish = "frontend"
+  command = ""
+
+# Config globale pour toutes les fonctions
+[functions]
+  directory = "netlify/functions"
+
+# Inclure emails.json dans le bundle de la fonction addEmail
+[functions."addEmail"]
+  included_files = ["netlify/functions/emails.json"]
+
+# Inclure emails.json dans le bundle de la fonction getEmails
+[functions."getEmails"]
+  included_files = ["netlify/functions/emails.json"]
+
+# (Optionnel) redirection /api/* vers les fonctions Netlify
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
