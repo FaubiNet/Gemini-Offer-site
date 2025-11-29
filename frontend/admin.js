@@ -1,196 +1,213 @@
 // frontend/admin.js
 document.addEventListener('DOMContentLoaded', () => {
-    // Éléments du formulaire de settings
+    // --- Éléments du DOM ---
+    const adminDashboard = document.getElementById('admin-dashboard');
+    const loginFormContainer = document.getElementById('login-form-container');
+    const adminMessageFeedback = document.getElementById('admin-message-feedback');
+    const loginMessageFeedback = document.getElementById('login-message-feedback');
+
+    // Champs de settings
     const titleInput = document.getElementById('admin-title-text');
-    const subtitleInput = document.getElementById('admin-subtitle-text'); 
     const buttonInput = document.getElementById('admin-button-text');
     const maxUsersInput = document.getElementById('admin-max-users');
     const regOpenInput = document.getElementById('admin-registration-open');
     const reqFNameInput = document.getElementById('admin-require-first-name');
     const reqLNameInput = document.getElementById('admin-require-last-name');
     const reqPhoneInput = document.getElementById('admin-require-phone');
-    
-    // NOUVEAUX Champs de texte
-    const statusTitleInput = document.getElementById('admin-status-title'); 
-    const statusTextTplInput = document.getElementById('admin-status-text-tpl'); 
-    const remainingTextTplInput = document.getElementById('admin-remaining-text-tpl'); 
-    const listTitleInput = document.getElementById('admin-list-title'); 
-    const limitTitleInput = document.getElementById('admin-limit-title'); 
-    const limitMessageInput = document.getElementById('admin-limit-message'); 
-    const passwordInput = document.getElementById('admin-password-input'); // Nouveau champ pour changer le mot de passe
+    const passwordInput = document.getElementById('admin-password-input'); // Champ de NOUVEAU mot de passe
 
+    // Connexion
+    const loginButton = document.getElementById('login-btn');
+    const loginPasswordInput = document.getElementById('login-password-input');
+    const logoutBtn = document.getElementById('logout-btn');
+
+    // Boutons et listes
     const saveButton = document.getElementById('save-settings-btn');
-    const feedbackEl = document.getElementById('admin-message-feedback');
-
-    // Éléments de la liste des inscrits
     const regListBody = document.getElementById('admin-registrations-list');
     const adminRegCount = document.getElementById('admin-registered-count');
     const adminMaxCount = document.getElementById('admin-max-count');
     const thFName = document.getElementById('th-first-name');
     const thLName = document.getElementById('th-last-name');
     const thPhone = document.getElementById('th-phone');
-    
-    // Éléments pour l'authentification
-    const loginForm = document.getElementById('admin-login-form');
-    const loginContainer = document.getElementById('admin-login-container');
-    const dashboardContainer = document.getElementById('admin-dashboard-container');
-    const loginPasswordInput = document.getElementById('login-password');
-    const loginFeedbackEl = document.getElementById('login-message-feedback');
-    const PASSWORD_COOKIE_NAME = 'admin_auth'; // Nom du cookie pour l'authentification
+
 
     const API_BASE_URL = '/api';
+    let CURRENT_SETTINGS = {};
 
-    // --- FONCTIONS DE GESTION DES COOKIES ---
-    const getCookie = (name) => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-        return null;
-    };
+    // --- Fonctions d'affichage ---
 
-    const setCookie = (name, value, days) => {
-        let expires = "";
-        if (days) {
-            const date = new Date();
-            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-            expires = "; expires=" + date.toUTCString();
+    const showLogin = (message = null) => {
+        loginFormContainer.classList.remove('hidden');
+        adminDashboard.classList.add('hidden');
+        if (message) {
+            loginMessageFeedback.textContent = message;
+            loginMessageFeedback.className = 'message error';
+        } else {
+             loginMessageFeedback.textContent = '';
+             loginMessageFeedback.className = 'message';
         }
-        // Utiliser SameSite=Lax ou Strict pour la sécurité
-        document.cookie = name + "=" + (value || "")  + expires + "; path=/; SameSite=Lax"; 
+        // Réinitialiser le champ de mot de passe de connexion
+        loginPasswordInput.value = '';
+        loginButton.disabled = false;
+        loginButton.textContent = 'Se Connecter';
     };
 
-    // --- FONCTION DE CHARGEMENT DES DONNÉES ET AFFICHAGE ---
-    
-    /**
-     * Lit les settings et les inscrits du backend et met à jour l'admin UI.
-     * Cette fonction est protégée par un cookie d'authentification dans le backend.
-     */
-    const loadAdminData = async () => {
+    const showDashboard = () => {
+        loginFormContainer.classList.add('hidden');
+        adminDashboard.classList.remove('hidden');
+    };
+
+    // --- Logique de connexion ---
+
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        const password = loginPasswordInput.value.trim();
+
+        if (!password) {
+            loginMessageFeedback.textContent = 'Veuillez entrer le mot de passe.';
+            loginMessageFeedback.className = 'message error';
+            return;
+        }
+
+        loginButton.disabled = true;
+        loginButton.textContent = 'Connexion...';
+        loginMessageFeedback.textContent = '';
+        loginMessageFeedback.className = 'message';
+
         try {
-            // Le backend vérifie le cookie dans l'en-tête de la requête
-            const response = await fetch(`${API_BASE_URL}/getSettings`); 
-            
-            if (response.status === 403) {
-                // Si l'accès est refusé (cookie invalide/expiré), on force la déconnexion
-                setCookie(PASSWORD_COOKIE_NAME, '', -1); // Supprimer le cookie
-                checkAuth(); // Retourner à la page de login
-                return;
-            }
-            
-            const settings = await response.json();
+            const response = await fetch(`${API_BASE_URL}/adminLogin`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password }),
+            });
+
+            const result = await response.json();
 
             if (!response.ok) {
-                throw new Error(settings.message || 'Erreur lors du chargement des données.');
-            }
-            
-            // Récupérer la liste des inscrits séparément pour alléger le getSettings
-            const regResponse = await fetch(`${API_BASE_URL}/getEmails`);
-            const regData = await regResponse.json();
-            const registrations = regData.registrations || [];
-
-
-            // 1. Charger les Settings dans le formulaire
-            titleInput.value = settings.title_text || '';
-            subtitleInput.value = settings.subtitle_text || ''; 
-            buttonInput.value = settings.button_text || '';
-            maxUsersInput.value = settings.max_users || 5;
-            regOpenInput.checked = settings.registration_open || false;
-            reqFNameInput.checked = settings.require_first_name || false;
-            reqLNameInput.checked = settings.require_last_name || false;
-            reqPhoneInput.checked = settings.require_phone || false;
-            
-            // NOUVEAUX CHAMPS DE TEXTE
-            statusTitleInput.value = settings.status_title || ''; 
-            statusTextTplInput.value = settings.status_text_tpl || ''; 
-            remainingTextTplInput.value = settings.remaining_text_tpl || ''; 
-            listTitleInput.value = settings.list_title || ''; 
-            limitTitleInput.value = settings.limit_title || ''; 
-            limitMessageInput.value = settings.limit_message || ''; 
-            // NOTE : on ne charge jamais le mot de passe haché dans ce champ
-
-            // 2. Mettre à jour la liste des inscrits
-            adminRegCount.textContent = registrations.length;
-            adminMaxCount.textContent = settings.max_users || 5;
-
-            // Afficher/Cacher les colonnes du tableau
-            thFName.classList.toggle('hidden', !settings.require_first_name);
-            thLName.classList.toggle('hidden', !settings.require_last_name);
-            thPhone.classList.toggle('hidden', !settings.require_phone);
-            
-            regListBody.innerHTML = '';
-            if (registrations.length > 0) {
-                registrations.forEach(reg => {
-                    const row = regListBody.insertRow();
-                    row.insertCell().textContent = reg.email;
-                    
-                    row.insertCell().textContent = reg.first_name || 'N/A';
-                    row.cells[1].classList.toggle('hidden', !settings.require_first_name);
-                    
-                    row.insertCell().textContent = reg.last_name || 'N/A';
-                    row.cells[2].classList.toggle('hidden', !settings.require_last_name);
-                    
-                    row.insertCell().textContent = reg.phone_number || 'N/A';
-                    row.cells[3].classList.toggle('hidden', !settings.require_phone);
-                    
-                    row.insertCell().textContent = '-'; 
-                });
-            } else {
-                 const row = regListBody.insertRow();
-                 row.insertCell(0).textContent = 'Aucun inscrit pour le moment.';
-                 row.cells[0].colSpan = 5; 
+                throw new Error(result.message || 'Mot de passe incorrect ou erreur.');
             }
 
+            sessionStorage.setItem('adminLoggedIn', 'true');
+            await loadAdminData(); // Charge le dashboard après connexion
+            
         } catch (error) {
-            console.error('Error loading admin data:', error);
-            feedbackEl.textContent = error.message;
-            feedbackEl.className = 'message error';
+            loginMessageFeedback.textContent = error.message;
+            loginMessageFeedback.className = 'message error';
+            loginButton.disabled = false;
+            loginButton.textContent = 'Se Connecter';
         }
     };
 
-    // --- FONCTION DE SAUVEGARDE DES SETTINGS ---
+    const handleLogout = () => {
+        sessionStorage.removeItem('adminLoggedIn');
+        showLogin();
+    };
+
+
+    // --- Logique de Chargement/Affichage du Dashboard ---
+
+    const loadAdminData = async () => {
+        adminMessageFeedback.textContent = 'Chargement des données...';
+        adminMessageFeedback.className = 'message';
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/getEmails`);
+            const data = await response.json();
+
+            if (!response.ok) {
+                 // Gère l'erreur critique de la ligne ID=1 manquante
+                throw new Error(data.message || 'Erreur de connexion aux données. (Vérifiez la ligne ID=1 dans la table settings)');
+            }
+
+            CURRENT_SETTINGS = data.settings;
+            const registrations = data.registrations;
+
+            // 1. Logique d'affichage (Connexion vs Configuration)
+            const passwordHashExists = CURRENT_SETTINGS.admin_password;
+
+            if (passwordHashExists && sessionStorage.getItem('adminLoggedIn') !== 'true') {
+                // Si le mot de passe existe MAIS l'utilisateur n'est PAS connecté
+                return showLogin('Accès restreint. Veuillez vous connecter.');
+            } else if (!passwordHashExists) {
+                // Si le mot de passe n'existe PAS (Première configuration)
+                showDashboard();
+                adminMessageFeedback.textContent = "ATTENTION : Veuillez définir un mot de passe Admin ci-dessous pour sécuriser l'accès.";
+                adminMessageFeedback.className = 'message error';
+            } else {
+                // Si le mot de passe existe ET l'utilisateur est connecté
+                showDashboard();
+                adminMessageFeedback.textContent = ''; // Efface le message de chargement
+                adminMessageFeedback.className = 'message';
+            }
+
+            // 2. Mise à jour des champs du formulaire
+            titleInput.value = CURRENT_SETTINGS.title_text || '';
+            buttonInput.value = CURRENT_SETTINGS.button_text || '';
+            maxUsersInput.value = CURRENT_SETTINGS.max_users || 5;
+            regOpenInput.checked = CURRENT_SETTINGS.registration_open;
+            reqFNameInput.checked = CURRENT_SETTINGS.require_first_name;
+            reqLNameInput.checked = CURRENT_SETTINGS.require_last_name;
+            reqPhoneInput.checked = CURRENT_SETTINGS.require_phone;
+            passwordInput.value = ''; // Jamais pré-rempli pour la sécurité
+
+            // 3. Affichage de la liste des inscrits
+            adminRegCount.textContent = registrations.length;
+            adminMaxCount.textContent = CURRENT_SETTINGS.max_users;
+
+            // Affichage conditionnel des colonnes
+            thFName.classList.toggle('hidden', !CURRENT_SETTINGS.require_first_name);
+            thLName.classList.toggle('hidden', !CURRENT_SETTINGS.require_last_name);
+            thPhone.classList.toggle('hidden', !CURRENT_SETTINGS.require_phone);
+
+            regListBody.innerHTML = '';
+            registrations.forEach(reg => {
+                const tr = document.createElement('tr');
+                let html = `<td>${reg.email}</td>`;
+
+                if (CURRENT_SETTINGS.require_first_name) html += `<td>${reg.first_name || 'N/A'}</td>`;
+                if (CURRENT_SETTINGS.require_last_name) html += `<td>${reg.last_name || 'N/A'}</td>`;
+                if (CURRENT_SETTINGS.require_phone) html += `<td>${reg.phone_number || 'N/A'}</td>`;
+
+                html += `<td><button class="cta-button" style="padding: 5px 10px; font-size: 0.8rem; background: var(--error-color);">Supprimer</button></td>`;
+
+                tr.innerHTML = html;
+                regListBody.appendChild(tr);
+            });
+
+
+        } catch (error) {
+            // Si le fetch échoue (problème Supabase ou Netlify), on montre l'erreur
+            showLogin(error.message);
+        }
+    };
+
+    // --- Logique de Sauvegarde ---
 
     const saveSettings = async () => {
         saveButton.disabled = true;
-        feedbackEl.textContent = 'Sauvegarde en cours...';
-        feedbackEl.className = 'message';
+        adminMessageFeedback.textContent = 'Sauvegarde en cours...';
+        adminMessageFeedback.className = 'message';
 
         const newSettings = {
             title_text: titleInput.value.trim(),
-            subtitle_text: subtitleInput.value.trim(), 
             button_text: buttonInput.value.trim(),
+            // Conserver le message de limite existant si non modifié par l'admin
+            limit_message: CURRENT_SETTINGS.limit_message || "Désolé, toutes les places sont prises.", 
             max_users: parseInt(maxUsersInput.value, 10),
             registration_open: regOpenInput.checked,
             require_first_name: reqFNameInput.checked,
             require_last_name: reqLNameInput.checked,
             require_phone: reqPhoneInput.checked,
-            
-            // NOUVEAUX CHAMPS DE TEXTE
-            status_title: statusTitleInput.value.trim(), 
-            status_text_tpl: statusTextTplInput.value.trim(), 
-            remaining_text_tpl: remainingTextTplInput.value.trim(), 
-            list_title: listTitleInput.value.trim(), 
-            limit_title: limitTitleInput.value.trim(), 
-            limit_message: limitMessageInput.value.trim(), 
+            // Seulement inclure le mot de passe s'il est rempli (sera haché par le backend)
+            ...(passwordInput.value.trim() && { admin_password: passwordInput.value.trim() }) 
         };
-        
-        // Ajouter le mot de passe s'il a été saisi
-        const newPassword = passwordInput.value.trim();
-        if (newPassword !== '') {
-            // Le backend se chargera du hachage
-            newSettings.admin_password = newPassword; 
-        }
 
         try {
-            // Le backend vérifie l'auth et hashe le mot de passe si présent
             const response = await fetch(`${API_BASE_URL}/updateSettings`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newSettings),
             });
-            
-            if (response.status === 403) {
-                 throw new Error('Session expirée ou non autorisée. Veuillez vous reconnecter.');
-            }
 
             const result = await response.json();
 
@@ -198,77 +215,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(result.message || 'Erreur lors de la sauvegarde.');
             }
 
-            feedbackEl.textContent = result.message || 'Paramètres sauvegardés !';
-            feedbackEl.className = 'message success';
-            passwordInput.value = ''; // Effacer le champ après l'envoi réussi
-            loadAdminData(); // Recharger les données pour synchronisation
+            adminMessageFeedback.textContent = result.message || 'Paramètres sauvegardés !';
+            adminMessageFeedback.className = 'message success';
+            passwordInput.value = ''; // Réinitialise le champ après envoi
+            await loadAdminData(); // Recharger les données pour synchronisation
 
         } catch (error) {
-            feedbackEl.textContent = error.message;
-            feedbackEl.className = 'message error';
-            if (error.message.includes('reconnecter')) {
-                 setCookie(PASSWORD_COOKIE_NAME, '', -1); 
-                 checkAuth(); 
-            }
+            adminMessageFeedback.textContent = error.message;
+            adminMessageFeedback.className = 'message error';
         } finally {
             saveButton.disabled = false;
         }
     };
-    
-    // --- FONCTION DE GESTION DE L'AUTHENTIFICATION ---
-    
-    const checkAuth = () => {
-        const token = getCookie(PASSWORD_COOKIE_NAME);
-        if (token) {
-            // Un cookie existe, on suppose que l'utilisateur est authentifié pour l'interface
-            loginContainer.classList.add('hidden');
-            dashboardContainer.classList.remove('hidden');
-            loadAdminData();
-        } else {
-            // Pas de cookie, afficher la page de connexion
-            dashboardContainer.classList.add('hidden');
-            loginContainer.classList.remove('hidden');
-        }
-    };
-    
-    const handleLogin = async (e) => {
-        e.preventDefault();
-        const password = loginPasswordInput.value.trim();
-        loginPasswordInput.value = '';
-        loginFeedbackEl.textContent = 'Connexion...';
-        loginFeedbackEl.className = 'message';
-        
-        try {
-            // Appel au nouveau endpoint backend pour la vérification du mot de passe
-            const response = await fetch(`${API_BASE_URL}/adminLogin`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password: password }),
-            });
-            
-            const result = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(result.message || 'Erreur de connexion.');
-            }
-            
-            // Si le backend renvoie OK, on définit le cookie et on charge le dashboard
-            setCookie(PASSWORD_COOKIE_NAME, result.token, 1); // Token valide 1 jour
-            loginFeedbackEl.textContent = 'Connexion réussie !';
-            loginFeedbackEl.className = 'message success';
-            checkAuth(); // Charge le dashboard
-            
-        } catch (error) {
-            loginFeedbackEl.textContent = error.message;
-            loginFeedbackEl.className = 'message error';
-        }
-    };
 
-
-    // Événements
+    // --- Initialisation ---
     saveButton.addEventListener('click', saveSettings);
-    if(loginForm) loginForm.addEventListener('submit', handleLogin); 
-    
-    // Initialisation
-    checkAuth(); 
+    loginFormContainer.addEventListener('submit', handleLogin);
+    logoutBtn.addEventListener('click', handleLogout);
+
+    loadAdminData();
 });

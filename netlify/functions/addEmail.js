@@ -29,9 +29,9 @@ exports.handler = async (event, context) => {
         .single();
     
     if (settingsError) {
-        // C'est l'erreur 'The result contains 0 rows' qui est remontée.
+        // Cette erreur est corrigée par la création de la ligne ID=1 dans Supabase
         console.error('Erreur lecture settings:', settingsError);
-        throw new Error('Erreur de configuration serveur. (Vérifiez la ligne ID=1 dans la table settings)');
+        throw new Error('Erreur de connexion aux données. (Vérifiez la ligne ID=1 dans la table settings)');
     }
 
     const MAX_USERS = settings.max_users || 5;
@@ -115,7 +115,7 @@ exports.handler = async (event, context) => {
 
     if (insertError) throw insertError;
 
-    // 7. Succès (Le frontend rechargera les données)
+    // 7. Succès
     return {
       statusCode: 201,
       body: JSON.stringify({

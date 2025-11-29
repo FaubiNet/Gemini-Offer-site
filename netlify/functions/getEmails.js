@@ -15,15 +15,15 @@ exports.handler = async (event, context) => {
         .single(); // Attendre une seule ligne (ID=1)
     
     if (settingsError) {
-        // Remonter l'erreur pour la fonction addEmail/getEmails
+        // Lève une erreur claire si la ligne ID=1 est manquante (PGRST116)
         console.error('Erreur getEmails - settings:', settingsError);
-        throw new Error('Erreur de configuration serveur. (Vérifiez la ligne ID=1 dans la table settings)');
+        throw new Error('Erreur de connexion aux données. (Vérifiez la ligne ID=1 dans la table settings)');
     }
 
     // 2. Récupérer toutes les inscriptions
-    // On sélectionne tous les champs pour le frontend
     const { data: registrations, error: regError } = await supabase
       .from('registrations')
+      // S'assurer que tous les champs dynamiques sont sélectionnés
       .select('email, first_name, last_name, phone_number') 
       .order('created_at', { ascending: true }); // Trier par ordre d'arrivée
 
