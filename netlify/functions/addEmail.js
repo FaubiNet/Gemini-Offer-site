@@ -3,6 +3,7 @@ const { createClient } = require('@supabase/supabase-js');
 
 // Les variables d'environnement sont lues par Netlify
 const supabaseUrl = process.env.SUPABASE_URL;
+// IMPORTANT : Utiliser la clé avec rôle de service pour les mutations de données
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY; 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -28,45 +29,56 @@ exports.handler = async (event, context) => {
         .single();
     
     if (settingsError) {
+        // C'est l'erreur 'The result contains 0 rows' qui est remontée.
         console.error('Erreur lecture settings:', settingsError);
-        throw new Error('Erreur de configuration serveur.');
+        throw new Error('Erreur de configuration serveur. (Vérifiez la ligne ID=1 dans la table settings)');
     }
 
+    const MAX_USERS = settings.max_users || 5;
+
     // Vérification de l'ouverture des inscriptions
-    if (!settings || !settings.registration_open) {
+    if (!settings.registration_open) {
         return {
             statusCode: 403,
-            body: JSON.stringify({ message: 'Désolé, les inscriptions sont actuellement fermées.' }),
+            body: JSON.stringify({ message: settings.limit_message || 'Désolé, les inscriptions sont actuellement fermées.' }),
         };
     }
     
-    const MAX_USERS = settings.max_users || 5;
-    const registrationData = { email: email };
-
     // 2. Validation de l'email
     if (!isValidEmail(email)) {
-      return { statusCode: 400, body: JSON.stringify({ message: 'Email invalide.' }) };
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ message: 'Veuillez entrer une adresse e-mail valide.' }),
+      };
     }
-
-    // 3. Validation et ajout des champs optionnels/requis
+    
+    // 3. Collecter les données et valider les champs requis
+    const registrationData = { email: email };
+    
+    // Prénom
     if (settings.require_first_name) {
         if (!body.first_name || body.first_name.trim() === '') {
-            return { statusCode: 400, body: JSON.stringify({ message: 'Le prénom est requis.' }) };
+            return { statusCode: 400, body: JSON.stringify({ message: 'Le Prénom est requis.' }) };
         }
         registrationData.first_name = body.first_name.trim();
     }
+    
+    // Nom de famille
     if (settings.require_last_name) {
         if (!body.last_name || body.last_name.trim() === '') {
-            return { statusCode: 400, body: JSON.stringify({ message: 'Le nom est requis.' }) };
+            return { statusCode: 400, body: JSON.stringify({ message: 'Le Nom de famille est requis.' }) };
         }
         registrationData.last_name = body.last_name.trim();
     }
+    
+    // Téléphone
     if (settings.require_phone) {
         if (!body.phone_number || body.phone_number.trim() === '') {
-            return { statusCode: 400, body: JSON.stringify({ message: 'Le numéro de téléphone est requis.' }) };
+            return { statusCode: 400, body: JSON.stringify({ message: 'Le Numéro de téléphone est requis.' }) };
         }
         registrationData.phone_number = body.phone_number.trim();
     }
+
 
     // 4. Vérifier le nombre actuel d'inscrits
     const { count, error: countError } = await supabase
@@ -78,7 +90,7 @@ exports.handler = async (event, context) => {
     if (count >= MAX_USERS) {
       return {
         statusCode: 403,
-        body: JSON.stringify({ message: `Désolé, les ${MAX_USERS} places sont prises !` }),
+        body: JSON.stringify({ message: settings.limit_message || `Désolé, les ${MAX_USERS} places sont prises !` }),
       };
     }
 
@@ -108,7 +120,6 @@ exports.handler = async (event, context) => {
       statusCode: 201,
       body: JSON.stringify({
         message: 'Félicitations ! Votre place est réservée.',
-        // On n'envoie plus la liste des emails, le front fait un nouvel appel getEmails
       }),
     };
 
@@ -116,7 +127,7 @@ exports.handler = async (event, context) => {
     console.error('Erreur addEmail:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: 'Erreur serveur interne.' }),
+      body: JSON.stringify({ message: error.message || 'Erreur serveur lors de l\'enregistrement.' }),
     };
   }
 };

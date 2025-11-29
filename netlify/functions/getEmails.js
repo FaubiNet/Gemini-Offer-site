@@ -12,16 +12,20 @@ exports.handler = async (event, context) => {
         .from('settings')
         .select('*')
         .eq('id', 1)
-        .single();
+        .single(); // Attendre une seule ligne (ID=1)
     
-    if (settingsError) throw settingsError;
+    if (settingsError) {
+        // Remonter l'erreur pour la fonction addEmail/getEmails
+        console.error('Erreur getEmails - settings:', settingsError);
+        throw new Error('Erreur de configuration serveur. (Vérifiez la ligne ID=1 dans la table settings)');
+    }
 
     // 2. Récupérer toutes les inscriptions
-    // On sélectionne tous les champs pour le dashboard admin
+    // On sélectionne tous les champs pour le frontend
     const { data: registrations, error: regError } = await supabase
       .from('registrations')
       .select('email, first_name, last_name, phone_number') 
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: true }); // Trier par ordre d'arrivée
 
     if (regError) throw regError;
 
@@ -39,7 +43,7 @@ exports.handler = async (event, context) => {
     console.error('Erreur getEmails:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: "Erreur lors de la récupération des données." }),
+      body: JSON.stringify({ message: error.message || "Erreur lors de la récupération des données." }),
     };
   }
 };
