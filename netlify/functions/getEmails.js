@@ -12,20 +12,21 @@ exports.handler = async (event, context) => {
         .from('settings')
         .select('*')
         .eq('id', 1)
-        .single();
+        .single(); // Attendre une seule ligne (ID=1)
     
     if (settingsError) {
         console.error('Erreur getEmails - settings:', settingsError);
         throw new Error('Erreur de connexion aux données. (Vérifiez la ligne ID=1 dans la table settings)');
     }
 
-    // 2. Récupérer uniquement les inscriptions actives (is_deleted = false)
+    // 2. Récupérer SEULEMENT les inscriptions ACTIVES (is_deleted = false)
+    // CORRECTION: Les emails dans la corbeille (is_deleted: true) ne sont pas comptés/affichés ici.
     const { data: registrations, error: regError } = await supabase
       .from('registrations')
-      // IMPORTANT : Inclure l'ID de la ligne
-      .select('id, email, first_name, last_name, phone_number')
-      .eq('is_deleted', false) // NOUVEAU: Ne récupérer que les enregistrements non supprimés
-      .order('created_at', { ascending: true }); 
+      // S'assurer que tous les champs dynamiques sont sélectionnés
+      .select('email, first_name, last_name, phone_number') 
+      .eq('is_deleted', false) // <--- CORRECTION CRITIQUE
+      .order('created_at', { ascending: true }); // Trier par ordre d'arrivée
 
     if (regError) throw regError;
 
@@ -44,7 +45,7 @@ exports.handler = async (event, context) => {
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: error.message || 'Erreur serveur interne.' }),
+      body: JSON.stringify({ message: 'Erreur interne du serveur lors de la récupération des emails.' }),
     };
   }
 };

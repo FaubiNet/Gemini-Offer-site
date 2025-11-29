@@ -13,13 +13,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const registrationFormContainer = document.getElementById('registration-form-container');
     const limitReachedContainer = document.getElementById('limit-reached-container');
     
-    // NOUVEAUX IDs pour les textes (assurés par index.html)
+    // Textes dynamiques
     const dynamicTitleEl = document.getElementById('dynamic-title');
-    const dynamicSubtitleEl = document.getElementById('dynamic-subtitle'); // AJOUTÉ
+    const dynamicSubtitleEl = document.getElementById('dynamic-subtitle');
     const statusTitleEl = document.getElementById('status-title'); 
     const dynamicStatusTextEl = document.getElementById('dynamic-status-text'); 
     const dynamicRemainingTextEl = document.getElementById('dynamic-remaining-text'); 
-    const listTitleEl = document.getElementById('list-title'); // AJOUTÉ
+    const listTitleEl = document.getElementById('list-title');
     const limitReachedTitleEl = document.getElementById('limit-reached-title');
     const limitReachedMessageEl = document.getElementById('limit-reached-message');
     
@@ -40,7 +40,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const [localPart, domain] = parts;
         
-        // Afficher les 3 premiers caractères du nom d'utilisateur, puis "****"
         const maskedLocalPart = localPart.length > 3 
             ? localPart.substring(0, 3) + '****' + localPart.substring(localPart.length - 4)
             : '****';
@@ -49,58 +48,54 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
 
-    // --- Fonctions de mise à jour de l'UI (CORRIGÉE pour les Templates) ---
-
+    // --- Mise à jour de l'UI (en filtrant les TRASH) ---
     const updateUI = (settings, registrations) => {
-        // Le endpoint getEmails.js ne renvoie que les inscriptions actives (is_deleted = false)
-        const activeRegistrations = registrations.filter(reg => !reg.is_deleted);
+        // ⚠️ On NE GARDE QUE les inscrits avec status === 'active'
+        const activeRegistrations = (registrations || []).filter(
+            (reg) => reg.status === 'active'
+        );
+
         const count = activeRegistrations.length;
-        MAX_USERS = parseInt(settings.max_users) || 5; 
+        MAX_USERS = parseInt(settings.max_users, 10) || 5; 
         const remaining = Math.max(0, MAX_USERS - count);
         const percentage = (MAX_USERS > 0) ? (count / MAX_USERS) * 100 : 0;
 
-        // 1. Mettre à jour les textes dynamiques
+        // 1. Textes dynamiques
         dynamicTitleEl.textContent = settings.title_text || 'Gemini Enterprise';
-        dynamicSubtitleEl.textContent = settings.subtitle_text || 'Hackers Academy X'; // CORRIGÉ
+        dynamicSubtitleEl.textContent = settings.subtitle_text || 'Hackers Academy X';
         submitButton.textContent = settings.button_text || 'Sécuriser ma place';
         
-        // Statut Title
         statusTitleEl.textContent = settings.status_title || 'Accès Anticipé – Vague 1';
         
-        // Statut Text (Template)
         const statusTextTemplate = settings.status_text_tpl || '%count% / %max% utilisateurs enregistrés';
         dynamicStatusTextEl.textContent = statusTextTemplate
-                                            .replace('%count%', count)
-                                            .replace('%max%', MAX_USERS);
+            .replace('%count%', count)
+            .replace('%max%', MAX_USERS);
 
-        // Remaining Spots Text (Template)
         const remainingTextTemplate = settings.remaining_text_tpl || 'Places restantes: %remaining%';
         dynamicRemainingTextEl.textContent = remainingTextTemplate.replace('%remaining%', remaining);
         
-        // List Title
         listTitleEl.textContent = settings.list_title || 'Liste des inscrits :';
 
-        // Limit Reached Message
         limitReachedTitleEl.textContent = settings.limit_title || 'L’offre est terminée !';
         limitReachedMessageEl.textContent = settings.limit_message || 'Retourne sur la chaîne Hackers Academy X...';
 
-
-        // 2. Mettre à jour la barre et les compteurs
+        // 2. Compteurs + barre
         registeredCountEl.textContent = count;
         maxUsersCountEl.textContent = MAX_USERS;
         remainingSpotsEl.textContent = remaining;
         progressBarEl.style.width = `${percentage}%`;
 
-        // 3. Afficher/Masquer les champs requis
+        // 3. Champs conditionnels
         firstNameInput.classList.toggle('hidden', !settings.require_first_name);
         lastNameInput.classList.toggle('hidden', !settings.require_last_name);
         phoneInput.classList.toggle('hidden', !settings.require_phone);
         
-        firstNameInput.required = settings.require_first_name;
-        lastNameInput.required = settings.require_last_name;
-        phoneInput.required = settings.require_phone;
+        firstNameInput.required = !!settings.require_first_name;
+        lastNameInput.required = !!settings.require_last_name;
+        phoneInput.required = !!settings.require_phone;
 
-        // 4. Afficher/Masquer la forme ou le message de limite
+        // 4. Formulaire vs limite atteinte
         if (count >= MAX_USERS || !settings.registration_open) {
             registrationFormContainer.classList.add('hidden');
             limitReachedContainer.classList.remove('hidden');
@@ -110,38 +105,35 @@ document.addEventListener('DOMContentLoaded', () => {
             submitButton.disabled = false;
         }
 
-
-        // 5. Afficher la liste des inscrits avec masquage
+        // 5. Liste des inscrits (seulement les ACTIFS)
         emailListEl.innerHTML = '';
         if (count === 0) {
             const li = document.createElement('li');
             li.id = 'empty-list-message';
             li.className = 'empty-message';
-            li.textContent = 'Personne n\'est inscrit. Soyez le premier !';
+            li.textContent = "Personne n'est inscrit. Soyez le premier !";
             emailListEl.appendChild(li);
         } else {
-            activeRegistrations.forEach(reg => {
+            activeRegistrations.forEach((reg) => {
                 const li = document.createElement('li');
-                // UTILISATION DU MASQUAGE
-                li.textContent = maskEmail(reg.email); 
+                li.textContent = maskEmail(reg.email);
                 emailListEl.appendChild(li);
             });
         }
     };
 
 
-    // --- Fonctions d'API ---
-    
+    // --- API ---
     const fetchEmails = async () => {
         try {
             const response = await fetch(`${API_BASE_URL}/getEmails`); 
             if (!response.ok) throw new Error('Erreur de chargement des données.');
             
             const data = await response.json();
-            CURRENT_SETTINGS = data.settings;
+            CURRENT_SETTINGS = data.settings || {};
             
-            // Note: data.registrations contient TOUS les inscrits (actifs et corbeille)
-            updateUI(data.settings, data.registrations); 
+            // data.registrations contient TOUS les inscrits (actifs + trash)
+            updateUI(data.settings, data.registrations || []); 
 
         } catch (error) {
             console.error('Erreur fetchEmails:', error);
@@ -172,7 +164,6 @@ document.addEventListener('DOMContentLoaded', () => {
         messageFeedbackEl.textContent = '';
         messageFeedbackEl.className = 'message';
 
-        // Construction dynamique du corps de la requête
         const bodyData = { email };
         if (CURRENT_SETTINGS.require_first_name) bodyData.first_name = first_name;
         if (CURRENT_SETTINGS.require_last_name) bodyData.last_name = last_name;
@@ -194,7 +185,6 @@ document.addEventListener('DOMContentLoaded', () => {
             messageFeedbackEl.textContent = result.message;
             messageFeedbackEl.className = 'message success';
             
-            // Réinitialisation des inputs
             emailInput.value = '';
             firstNameInput.value = '';
             lastNameInput.value = '';
@@ -215,5 +205,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     emailForm.addEventListener('submit', handleFormSubmit);
-    fetchEmails(); // Chargement initial
+    fetchEmails();
 });

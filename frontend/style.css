@@ -133,7 +133,7 @@ body {
 }
 
 /* ----------------------------------------------------- */
-/* --- FORMULAIRE --- */
+/* --- FORMULAIRE PUBLIC --- */
 /* ----------------------------------------------------- */
 
 #email-form {
@@ -159,6 +159,35 @@ body {
     box-shadow: 0 0 5px var(--blue-glow);
 }
 
+/* --- FORMULAIRE DE CONNEXION ADMIN --- */
+
+#login-form-container {
+    margin-top: 1rem;
+}
+
+#login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+#login-form input[type="password"] {
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+#login-form input[type="password"]:focus {
+    outline: none;
+    border-color: var(--blue-glow);
+    box-shadow: 0 0 5px var(--blue-glow);
+}
+
 .cta-button {
     padding: 1rem;
     border: none;
@@ -174,7 +203,7 @@ body {
 }
 
 .cta-button:hover:not(:disabled) {
-    background: #0088ff; /* Lighter blue on hover */
+    background: #0088ff;
     transform: translateY(-1px);
 }
 
@@ -232,7 +261,7 @@ body {
     border-radius: 4px;
     font-family: 'Inter', monospace;
     font-size: 0.9rem;
-    color: var(--success-color); /* Couleur distinctive pour l'email masqué */
+    color: var(--success-color);
 }
 
 #email-list .empty-message {
@@ -279,7 +308,7 @@ body {
 /* ----------------------------------------------------- */
 
 .admin-card {
-    max-width: 900px; /* Plus large pour le tableau */
+    max-width: 900px;
 }
 
 .admin-header {
@@ -375,7 +404,6 @@ body {
 }
 
 
-/* NOUVEAU: Container pour les boutons Actifs/Corbeille */
 .admin-views-container {
     display: flex;
     gap: 10px;
@@ -407,17 +435,16 @@ body {
 
 .table-container {
     overflow-x: auto;
-    /* Ombre douce à l'intérieur pour un effet moderne */
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); 
     border-radius: 8px; 
-    border: 1px solid var(--glass-border); /* Nouvelle bordure pour contenir l'ombre */
+    border: 1px solid var(--glass-border);
 }
 
 .admin-table { 
     width: 100%; 
     border-collapse: collapse; 
     margin-top: 0; 
-    min-width: 650px; /* Assure que le tableau est scrollable sur petit écran */
+    min-width: 650px;
 }
 
 .admin-table thead tr {
@@ -425,7 +452,7 @@ body {
 }
 
 .admin-table th, .admin-table td { 
-    border: none; /* Suppression des bordures internes */
+    border: none;
     padding: 0.75rem 1rem; 
     text-align: left; 
     font-size: 0.85rem;
@@ -438,7 +465,7 @@ body {
 }
 
 .admin-table tbody tr {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05); /* Ligne de séparation douce */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     transition: background-color 0.1s;
 }
 
@@ -451,14 +478,12 @@ body {
     vertical-align: middle;
 }
 
-/* Style pour l'email masqué dans le tableau Admin (pour cohérence) */
 .admin-table td.masked-email {
     font-family: 'Inter', monospace; 
     color: var(--success-color); 
     white-space: nowrap;
 }
 
-/* Boutons d'action dans la table */
 .cell-with-actions {
     display: flex;
     align-items: center;
@@ -491,7 +516,7 @@ body {
     background: rgba(255, 77, 77, 0.1);
 }
 
-/* Media Queries pour le mobile */
+/* Media Queries */
 @media (max-width: 768px) {
     body {
         padding: 1rem;
