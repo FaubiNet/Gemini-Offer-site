@@ -13,13 +13,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const registrationFormContainer = document.getElementById('registration-form-container');
     const limitReachedContainer = document.getElementById('limit-reached-container');
     
+    // NOUVEAUX IDs pour les textes (assurés par index.html)
     const dynamicTitleEl = document.getElementById('dynamic-title');
+    const dynamicSubtitleEl = document.getElementById('dynamic-subtitle'); // AJOUTÉ
     const statusTitleEl = document.getElementById('status-title'); 
     const dynamicStatusTextEl = document.getElementById('dynamic-status-text'); 
     const dynamicRemainingTextEl = document.getElementById('dynamic-remaining-text'); 
+    const listTitleEl = document.getElementById('list-title'); // AJOUTÉ
     const limitReachedTitleEl = document.getElementById('limit-reached-title');
     const limitReachedMessageEl = document.getElementById('limit-reached-message');
     
+    // Champs conditionnels
     const firstNameInput = document.getElementById('first-name-input');
     const lastNameInput = document.getElementById('last-name-input');
     const phoneInput = document.getElementById('phone-input');
@@ -28,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let CURRENT_SETTINGS = {}; 
     const API_BASE_URL = '/api';
 
-    // --- NOUVELLE FONCTION: Masquage de l'email ---
+    // --- FONCTION: Masquage de l'email ---
     const maskEmail = (email) => {
         if (!email || typeof email !== 'string') return '';
         const parts = email.split('@');
@@ -37,7 +41,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const [localPart, domain] = parts;
         
         // Afficher les 3 premiers caractères du nom d'utilisateur, puis "****"
-        // et les 4 derniers caractères pour une identification légère.
         const maskedLocalPart = localPart.length > 3 
             ? localPart.substring(0, 3) + '****' + localPart.substring(localPart.length - 4)
             : '****';
@@ -46,25 +49,41 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
 
-    // --- Fonctions de mise à jour de l'UI ---
+    // --- Fonctions de mise à jour de l'UI (CORRIGÉE pour les Templates) ---
 
     const updateUI = (settings, registrations) => {
         // Le endpoint getEmails.js ne renvoie que les inscriptions actives (is_deleted = false)
-        const count = registrations.length;
+        const activeRegistrations = registrations.filter(reg => !reg.is_deleted);
+        const count = activeRegistrations.length;
         MAX_USERS = parseInt(settings.max_users) || 5; 
         const remaining = Math.max(0, MAX_USERS - count);
         const percentage = (MAX_USERS > 0) ? (count / MAX_USERS) * 100 : 0;
 
         // 1. Mettre à jour les textes dynamiques
         dynamicTitleEl.textContent = settings.title_text || 'Gemini Enterprise';
+        dynamicSubtitleEl.textContent = settings.subtitle_text || 'Hackers Academy X'; // CORRIGÉ
         submitButton.textContent = settings.button_text || 'Sécuriser ma place';
         
+        // Statut Title
         statusTitleEl.textContent = settings.status_title || 'Accès Anticipé – Vague 1';
-        dynamicStatusTextEl.textContent = settings.status_text || 'places restantes';
-        dynamicRemainingTextEl.textContent = remaining <= 1 ? 'Reste' : 'Restent'; 
         
+        // Statut Text (Template)
+        const statusTextTemplate = settings.status_text_tpl || '%count% / %max% utilisateurs enregistrés';
+        dynamicStatusTextEl.textContent = statusTextTemplate
+                                            .replace('%count%', count)
+                                            .replace('%max%', MAX_USERS);
+
+        // Remaining Spots Text (Template)
+        const remainingTextTemplate = settings.remaining_text_tpl || 'Places restantes: %remaining%';
+        dynamicRemainingTextEl.textContent = remainingTextTemplate.replace('%remaining%', remaining);
+        
+        // List Title
+        listTitleEl.textContent = settings.list_title || 'Liste des inscrits :';
+
+        // Limit Reached Message
         limitReachedTitleEl.textContent = settings.limit_title || 'L’offre est terminée !';
         limitReachedMessageEl.textContent = settings.limit_message || 'Retourne sur la chaîne Hackers Academy X...';
+
 
         // 2. Mettre à jour la barre et les compteurs
         registeredCountEl.textContent = count;
@@ -101,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
             li.textContent = 'Personne n\'est inscrit. Soyez le premier !';
             emailListEl.appendChild(li);
         } else {
-            registrations.forEach(reg => {
+            activeRegistrations.forEach(reg => {
                 const li = document.createElement('li');
                 // UTILISATION DU MASQUAGE
                 li.textContent = maskEmail(reg.email); 
@@ -121,7 +140,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             CURRENT_SETTINGS = data.settings;
             
-            updateUI(data.settings, data.registrations);
+            // Note: data.registrations contient TOUS les inscrits (actifs et corbeille)
+            updateUI(data.settings, data.registrations); 
 
         } catch (error) {
             console.error('Erreur fetchEmails:', error);
@@ -152,6 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
         messageFeedbackEl.textContent = '';
         messageFeedbackEl.className = 'message';
 
+        // Construction dynamique du corps de la requête
         const bodyData = { email };
         if (CURRENT_SETTINGS.require_first_name) bodyData.first_name = first_name;
         if (CURRENT_SETTINGS.require_last_name) bodyData.last_name = last_name;
@@ -173,6 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
             messageFeedbackEl.textContent = result.message;
             messageFeedbackEl.className = 'message success';
             
+            // Réinitialisation des inputs
             emailInput.value = '';
             firstNameInput.value = '';
             lastNameInput.value = '';

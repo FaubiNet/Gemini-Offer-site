@@ -1,9 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Admin - Gemini Offer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css"> 
 </head>
 <body>
@@ -33,67 +36,75 @@
                 
                 <div class="field-control">
                     <label for="admin-title-text">Titre principal de la page :</label>
-                    <input type="text" id="admin-title-text" placeholder="Ex: Gemini Enterprise">
+                    <input type="text" id="admin-title-text" placeholder="Titre principal" required>
+                </div>
+                <div class="field-control">
+                    <label for="admin-subtitle-text">Sous-titre de la page :</label>
+                    <input type="text" id="admin-subtitle-text" placeholder="Sous-titre (ex: Hackers Academy X)">
+                </div>
+                <div class="field-control">
+                    <label for="admin-button-text">Texte du bouton d'inscription :</label>
+                    <input type="text" id="admin-button-text" placeholder="Texte du bouton" required>
+                </div>
+
+                <div class="separator"></div>
+                
+                <h4>Textes de Statut (Barre de Progression)</h4>
+                <div class="field-control">
+                    <label for="admin-status-title">Titre de Statut (ex: Vague 1) :</label>
+                    <input type="text" id="admin-status-title" placeholder="Accès Anticipé – Vague 1" required>
+                </div>
+                <div class="field-control">
+                    <label for="admin-status-text-tpl">Template Texte de Statut (%count%, %max%) :</label>
+                    <input type="text" id="admin-status-text-tpl" placeholder="%count% / %max% utilisateurs enregistrés" required>
+                </div>
+                <div class="field-control">
+                    <label for="admin-remaining-text-tpl">Template Texte Places Restantes (%remaining%) :</label>
+                    <input type="text" id="admin-remaining-text-tpl" placeholder="Places restantes: %remaining%" required>
+                </div>
+                <div class="field-control">
+                    <label for="admin-list-title">Titre de la liste des inscrits :</label>
+                    <input type="text" id="admin-list-title" placeholder="Liste des inscrits :" required>
                 </div>
                 
+                <div class="separator"></div>
+
+                <h4>Message Limite Atteinte</h4>
                 <div class="field-control">
-                    <label for="admin-button-text">Texte du bouton CTA :</label>
-                    <input type="text" id="admin-button-text" placeholder="Ex: Sécuriser ma place">
-                </div>
-
-                <hr class="separator">
-
-                <h4>Section Statut et Progression</h4>
-                 <div class="field-control">
-                    <label for="admin-status-title">Titre du statut (Au-dessus de la barre) :</label>
-                    <input type="text" id="admin-status-title" placeholder="Ex: Accès Anticipé – Vague 1">
-                </div>
-                 <div class="field-control">
-                    <label for="admin-status-text">Texte "places restantes" :</label>
-                    <input type="text" id="admin-status-text" placeholder="Ex: places restantes">
-                </div>
-
-                <hr class="separator">
-
-                <h4>Section Limite Atteinte</h4>
-                <div class="field-control">
-                    <label for="admin-limit-title">Titre de la limite atteinte :</label>
-                    <input type="text" id="admin-limit-title" placeholder="Ex: L’offre est terminée !">
+                    <label for="admin-limit-title">Titre Limite Atteinte :</label>
+                    <input type="text" id="admin-limit-title" placeholder="L’offre est terminée !" required>
                 </div>
                 <div class="field-control">
-                    <label for="admin-limit-message">Message de la limite atteinte :</label>
-                    <input type="text" id="admin-limit-message" placeholder="Ex: Retourne sur la chaîne...">
+                    <label for="admin-limit-message">Message Limite Atteinte :</label>
+                    <input type="text" id="admin-limit-message" placeholder="Retourne sur la chaîne Hackers Academy X..." required>
                 </div>
 
-                <hr class="separator">
-
-                <h4>Limites & Champs Requis</h4>
+                <div class="separator"></div>
+                
                 <div class="field-control">
-                    <label for="admin-max-users">Limite maximale d'inscrits :</label>
-                    <input type="number" id="admin-max-users" value="5" min="1">
+                    <label for="admin-max-users">Limite Max d'inscrits :</label>
+                    <input type="number" id="admin-max-users" value="5" min="1" required>
                 </div>
                 
                 <div class="field-control checkbox-control">
-                    <label for="admin-registration-open">Inscription Ouverte :</label>
-                    <input type="checkbox" id="admin-registration-open">
+                    <label for="admin-registration-open">Inscription ouverte ?</label>
+                    <input type="checkbox" id="admin-registration-open" checked>
                 </div>
 
                 <div class="field-control checkbox-control">
-                    <label for="admin-require-first-name">Exiger Prénom :</label>
+                    <label for="admin-require-first-name">Exiger le Prénom ?</label>
                     <input type="checkbox" id="admin-require-first-name">
                 </div>
-                
                 <div class="field-control checkbox-control">
-                    <label for="admin-require-last-name">Exiger Nom de famille :</label>
+                    <label for="admin-require-last-name">Exiger le Nom ?</label>
                     <input type="checkbox" id="admin-require-last-name">
                 </div>
-
                 <div class="field-control checkbox-control">
-                    <label for="admin-require-phone">Exiger Numéro de téléphone :</label>
+                    <label for="admin-require-phone">Exiger le Téléphone ?</label>
                     <input type="checkbox" id="admin-require-phone">
                 </div>
-                
-                <hr class="separator">
+
+                <div class="separator"></div>
                 
                 <div class="field-control">
                     <label for="admin-password-input">Mot de passe Admin (laissez vide pour ne pas changer) :</label>
@@ -104,9 +115,13 @@
             </section>
 
             <section class="registered-list-section admin-section">
+                
                 <div class="admin-views-container">
                     <button id="view-active-btn" class="view-switch-btn active">Inscrits Actifs (<span id="admin-registered-count">0</span>)</button>
                     <button id="view-trash-btn" class="view-switch-btn">Corbeille (<span id="admin-trash-count">0</span>)</button>
+                    <span style="color: var(--text-secondary); margin-left: auto; font-size: 0.9rem;">
+                        Limite Max : <span id="admin-max-count">5</span>
+                    </span>
                 </div>
                 
                 <div class="table-container">

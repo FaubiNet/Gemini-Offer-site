@@ -8,19 +8,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Champs de settings
     const titleInput = document.getElementById('admin-title-text');
+    const subtitleInput = document.getElementById('admin-subtitle-text'); // AJOUTÉ/CORRIGÉ
     const buttonInput = document.getElementById('admin-button-text');
+    
+    // NOUVEAU: Champs de texte pour le statut (Utilisation des IDs _tpl)
     const statusTitleInput = document.getElementById('admin-status-title');
-    const statusTextInput = document.getElementById('admin-status-text');
+    const statusTextTplInput = document.getElementById('admin-status-text-tpl'); // ID CORRIGÉ
+    const remainingTextTplInput = document.getElementById('admin-remaining-text-tpl'); // AJOUTÉ
+    const listTitleInput = document.getElementById('admin-list-title'); // AJOUTÉ
+    
+    // NOUVEAU: Champs de texte pour la limite atteinte
     const limitTitleInput = document.getElementById('admin-limit-title');
     const limitMessageInput = document.getElementById('admin-limit-message');
+
     const maxUsersInput = document.getElementById('admin-max-users');
     const regOpenInput = document.getElementById('admin-registration-open');
     const reqFNameInput = document.getElementById('admin-require-first-name');
     const reqLNameInput = document.getElementById('admin-require-last-name');
     const reqPhoneInput = document.getElementById('admin-require-phone');
-    const passwordInput = document.getElementById('admin-password-input');
+    const passwordInput = document.getElementById('admin-password-input'); 
 
     // Connexion
+    const loginButton = document.getElementById('login-btn');
     const loginPasswordInput = document.getElementById('login-password-input');
     const logoutBtn = document.getElementById('logout-btn');
 
@@ -28,292 +37,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveButton = document.getElementById('save-settings-btn');
     const regListBody = document.getElementById('admin-registrations-list');
     const adminRegCount = document.getElementById('admin-registered-count');
+    const adminTrashCount = document.getElementById('admin-trash-count'); // AJOUTÉ
     const adminMaxCount = document.getElementById('admin-max-count');
-    
-    // NOUVEAU: Boutons de vue et Compteurs Corbeille
     const viewActiveBtn = document.getElementById('view-active-btn');
     const viewTrashBtn = document.getElementById('view-trash-btn');
-    const adminTrashCount = document.getElementById('admin-trash-count');
-    
-    // Headers de table
+
+    // Entêtes de tableau
     const thFirstName = document.getElementById('th-first-name');
     const thLastName = document.getElementById('th-last-name');
     const thPhone = document.getElementById('th-phone');
     const thActions = document.getElementById('th-actions');
 
-
     const API_BASE_URL = '/api';
-    let ALL_REGISTRATIONS = []; 
+    let ALL_REGISTRATIONS = [];
     let CURRENT_SETTINGS = {};
     let CURRENT_VIEW = 'active'; // 'active' ou 'trash'
 
-    // --- NOUVELLE FONCTION: Masquage de l'email ---
-    const maskEmail = (email) => {
-        if (!email || typeof email !== 'string') return '';
-        const parts = email.split('@');
-        if (parts.length !== 2) return email;
-
-        const [localPart, domain] = parts;
-        
-        // Afficher les 3 premiers caractères du nom d'utilisateur, puis "****"
-        const maskedLocalPart = localPart.length > 3 
-            ? localPart.substring(0, 3) + '****' + localPart.substring(localPart.length - 4)
-            : '****'; // Au cas où le nom d'utilisateur est trop court
-            
-        return `${maskedLocalPart}@${domain}`;
-    };
-
-    // --- Mise à jour de l'UI des Inscriptions ---
-
-    const renderRegistrationsTable = (registrations) => {
-        regListBody.innerHTML = '';
-        const filteredRegistrations = registrations.filter(reg => 
-            CURRENT_VIEW === 'active' ? !reg.is_deleted : reg.is_deleted
-        );
-        
-        // Mettre à jour les compteurs
-        const activeCount = ALL_REGISTRATIONS.filter(reg => !reg.is_deleted).length;
-        const trashCount = ALL_REGISTRATIONS.filter(reg => reg.is_deleted).length;
-        adminRegCount.textContent = activeCount;
-        adminTrashCount.textContent = trashCount;
-        adminMaxCount.textContent = CURRENT_SETTINGS.max_users || 5;
-        
-        // Mettre à jour les classes actives des boutons
-        viewActiveBtn.classList.toggle('active', CURRENT_VIEW === 'active');
-        viewTrashBtn.classList.toggle('active', CURRENT_VIEW === 'trash');
-        
-        // Mettre à jour le texte du header d'actions
-        thActions.textContent = CURRENT_VIEW === 'active' ? 'Actions' : 'Gestion Corbeille';
-
-        if (filteredRegistrations.length === 0) {
-            const row = regListBody.insertRow();
-            const cell = row.insertCell(0);
-            cell.colSpan = 5;
-            cell.textContent = CURRENT_VIEW === 'active' 
-                ? 'Aucun inscrit actif pour le moment.' 
-                : 'La corbeille est vide.';
-            cell.style.textAlign = 'center';
-            return;
-        }
-
-        filteredRegistrations.forEach(reg => {
-            const row = regListBody.insertRow();
-            
-            // Cellule Email (avec masquage)
-            const emailCell = row.insertCell();
-            emailCell.className = 'masked-email';
-            emailCell.textContent = maskEmail(reg.email);
-
-            // Autres cellules
-            row.insertCell().textContent = reg.first_name || '';
-            row.insertCell().textContent = reg.last_name || '';
-            row.insertCell().textContent = reg.phone_number || '';
-
-            // Cellule Actions
-            const actionsCell = row.insertCell();
-            actionsCell.className = 'cell-with-actions';
-
-            if (CURRENT_VIEW === 'active') {
-                // Bouton Mettre à la corbeille
-                const trashBtn = document.createElement('button');
-                trashBtn.textContent = 'Corbeille';
-                trashBtn.className = 'action-btn delete';
-                trashBtn.dataset.id = reg.id;
-                trashBtn.dataset.action = 'soft-delete';
-                actionsCell.appendChild(trashBtn);
-            } else { // Vue Corbeille
-                // Bouton Restaurer
-                const restoreBtn = document.createElement('button');
-                restoreBtn.textContent = 'Restaurer';
-                restoreBtn.className = 'action-btn';
-                restoreBtn.dataset.id = reg.id;
-                restoreBtn.dataset.action = 'restore';
-                actionsCell.appendChild(restoreBtn);
-
-                // Bouton Supprimer définitivement
-                const deleteBtn = document.createElement('button');
-                deleteBtn.textContent = 'Supprimer Déf.';
-                deleteBtn.className = 'action-btn delete';
-                deleteBtn.dataset.id = reg.id;
-                deleteBtn.dataset.action = 'hard-delete';
-                actionsCell.appendChild(deleteBtn);
-            }
-        });
-        
-        // Ajouter l'écouteur d'événement au conteneur de la table
-        regListBody.removeEventListener('click', handleRegistrationAction); 
-        regListBody.addEventListener('click', handleRegistrationAction);
-    };
-    
-    // --- Gestion des Actions (Soft Delete, Hard Delete, Restore) ---
-    const handleRegistrationAction = async (e) => {
-        const target = e.target.closest('.action-btn');
-        if (!target) return;
-
-        const id = target.dataset.id;
-        const action = target.dataset.action;
-        const buttonText = target.textContent;
-        
-        let confirmMessage;
-        let confirmAction = true;
-
-        switch (action) {
-            case 'soft-delete':
-                confirmMessage = 'Êtes-vous sûr de vouloir déplacer cet inscrit dans la corbeille ?';
-                break;
-            case 'restore':
-                confirmMessage = 'Êtes-vous sûr de vouloir restaurer cet inscrit ?';
-                confirmAction = true; // Pas besoin de confirmation forte
-                break;
-            case 'hard-delete':
-                confirmMessage = 'ATTENTION : La suppression est DÉFINITIVE. Continuer ?';
-                confirmAction = confirm('Êtes-vous sûr de vouloir SUPPRIMER DÉFINITIVEMENT cet inscrit ? Cette action est irréversible.');
-                break;
-            default:
-                return;
-        }
-
-        if (!confirmAction) return;
-
-        target.disabled = true;
-        target.textContent = 'En cours...';
-        adminMessageFeedback.textContent = '';
-        adminMessageFeedback.className = 'message';
-
-        try {
-            const response = await fetch(`${API_BASE_URL}/updateRegistrationStatus`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    // Le cookie est automatiquement inclus par le navigateur s'il est défini
-                },
-                body: JSON.stringify({ id: id, action: action }),
-            });
-
-            const result = await response.json();
-
-            if (!response.ok) {
-                throw new Error(result.message || 'Erreur d\'action.');
-            }
-
-            adminMessageFeedback.textContent = result.message;
-            adminMessageFeedback.className = 'message success';
-            await loadAdminData(); // Recharger les données et l'UI
-
-        } catch (error) {
-            adminMessageFeedback.textContent = error.message;
-            adminMessageFeedback.className = 'message error';
-            target.textContent = buttonText;
-        } finally {
-            target.disabled = false;
-        }
-    };
-
-
-    // --- Chargement des données Admin ---
-    const loadAdminData = async () => {
-        try {
-            // Utiliser le nouveau endpoint qui renvoie TOUTES les inscriptions et les settings
-            const response = await fetch(`${API_BASE_URL}/getAdminData`); 
-            
-            // ... (Conservez la logique de vérification de session et de mise à jour des settings) ...
-             if (response.status === 403) {
-                // Si la session est expirée ou non valide
-                adminDashboard.classList.add('hidden');
-                loginFormContainer.classList.remove('hidden');
-                return;
-            }
-
-            if (!response.ok) throw new Error('Erreur de chargement des données Admin.');
-
-            const data = await response.json();
-            ALL_REGISTRATIONS = data.registrations;
-            CURRENT_SETTINGS = data.settings;
-            
-            // Afficher le tableau de bord
-            adminDashboard.classList.remove('hidden');
-            loginFormContainer.classList.add('hidden');
-
-            // 1. Mettre à jour les champs de settings
-            titleInput.value = data.settings.title_text || '';
-            buttonInput.value = data.settings.button_text || '';
-            statusTitleInput.value = data.settings.status_title || '';
-            statusTextInput.value = data.settings.status_text || '';
-            limitTitleInput.value = data.settings.limit_title || '';
-            limitMessageInput.value = data.settings.limit_message || '';
-
-            maxUsersInput.value = data.settings.max_users || 5;
-            regOpenInput.checked = data.settings.registration_open;
-            reqFNameInput.checked = data.settings.require_first_name;
-            reqLNameInput.checked = data.settings.require_last_name;
-            reqPhoneInput.checked = data.settings.require_phone;
-            
-            // 2. Mettre à jour l'affichage des colonnes du tableau
-            thFirstName.classList.toggle('hidden', !data.settings.require_first_name);
-            thLastName.classList.toggle('hidden', !data.settings.require_last_name);
-            thPhone.classList.toggle('hidden', !data.settings.require_phone);
-            
-            // 3. Rendu du tableau (vue par défaut: 'active')
-            renderRegistrationsTable(ALL_REGISTRATIONS);
-
-
-        } catch (error) {
-            console.error('Erreur loadAdminData:', error);
-            adminMessageFeedback.textContent = error.message;
-            adminMessageFeedback.className = 'message error';
-            // Si le chargement échoue, on revient au login
-            adminDashboard.classList.add('hidden');
-            loginFormContainer.classList.remove('hidden');
-        }
-    };
-    
-    // --- Fonction de Sauvegarde ---
-    const saveSettings = async () => {
-        saveButton.disabled = true;
-        adminMessageFeedback.textContent = '';
-        adminMessageFeedback.className = 'message';
-        
-        const newSettings = {
-            title_text: titleInput.value.trim(),
-            button_text: buttonInput.value.trim(),
-            status_title: statusTitleInput.value.trim(),
-            status_text: statusTextInput.value.trim(),
-            limit_title: limitTitleInput.value.trim(),
-            limit_message: limitMessageInput.value.trim(),
-
-            max_users: parseInt(maxUsersInput.value, 10),
-            registration_open: regOpenInput.checked,
-            require_first_name: reqFNameInput.checked,
-            require_last_name: reqLNameInput.checked,
-            require_phone: reqPhoneInput.checked,
-            ...(passwordInput.value.trim() && { admin_password: passwordInput.value.trim() }) 
-        };
-
-        try {
-            const response = await fetch(`${API_BASE_URL}/updateSettings`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newSettings),
-            });
-
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.message);
-
-            adminMessageFeedback.textContent = 'Sauvegardé !';
-            adminMessageFeedback.className = 'message success';
-            passwordInput.value = ''; 
-            await loadAdminData(); 
-
-        } catch (error) {
-            adminMessageFeedback.textContent = error.message;
-            adminMessageFeedback.className = 'message error';
-        } finally {
-            saveButton.disabled = false;
-        }
-    };
-
-
-    // --- Fonctions de Login / Logout ---
+    // --- Fonction de connexion (inchangée) ---
     const handleLogin = async (e) => {
         e.preventDefault();
         const password = loginPasswordInput.value.trim();
@@ -321,7 +61,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         loginPasswordInput.disabled = true;
         loginMessageFeedback.textContent = '';
-        loginMessageFeedback.className = 'message';
 
         try {
             const response = await fetch(`${API_BASE_URL}/adminLogin`, {
@@ -335,13 +74,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) {
                 throw new Error(result.message || 'Erreur de connexion.');
             }
-
-            // Définir le cookie de session (détails omis, seulement l'appel)
-            document.cookie = "admin_auth=VALID_ADMIN_SESSION_2024; path=/; max-age=3600; Secure; HttpOnly=false";
             
-            loginMessageFeedback.textContent = result.message;
-            loginMessageFeedback.className = 'message success';
-            loginPasswordInput.value = ''; // Effacer le mot de passe
+            // Connexion réussie, définir le cookie pour la session
+            document.cookie = "admin_auth=VALID_ADMIN_SESSION_2024; path=/; max-age=" + (60 * 60 * 24); // 24h
+            
+            loginFormContainer.classList.add('hidden');
+            adminDashboard.classList.remove('hidden');
+            adminMessageFeedback.textContent = 'Connexion réussie.';
+            adminMessageFeedback.className = 'message success';
+            loginPasswordInput.value = ''; 
             
             await loadAdminData();
 
@@ -352,9 +93,9 @@ document.addEventListener('DOMContentLoaded', () => {
             loginPasswordInput.disabled = false;
         }
     };
-
+    
+    // --- Fonction de déconnexion (inchangée) ---
     const handleLogout = () => {
-        // Supprimer le cookie
         document.cookie = "admin_auth=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
         adminDashboard.classList.add('hidden');
         loginFormContainer.classList.remove('hidden');
@@ -362,6 +103,243 @@ document.addEventListener('DOMContentLoaded', () => {
         adminMessageFeedback.className = 'message success';
     };
 
+
+    // --- Fonction pour charger les données Admin ---
+    const loadAdminData = async () => {
+        adminMessageFeedback.textContent = 'Chargement des données...';
+        adminMessageFeedback.className = 'message';
+        try {
+            // Utiliser getEmails pour obtenir les settings ET les inscriptions
+            const response = await fetch(`${API_BASE_URL}/getEmails`); 
+            
+            if (response.status === 403) {
+                handleLogout(); // Déconnecter si la session est expirée/invalide
+                return;
+            }
+            
+            if (!response.ok) throw new Error('Erreur de chargement des données.');
+
+            const data = await response.json();
+            CURRENT_SETTINGS = data.settings;
+            ALL_REGISTRATIONS = data.registrations;
+
+            // 1. Charger les settings dans les inputs
+            titleInput.value = CURRENT_SETTINGS.title_text || '';
+            subtitleInput.value = CURRENT_SETTINGS.subtitle_text || ''; // AJOUTÉ/CORRIGÉ
+            buttonInput.value = CURRENT_SETTINGS.button_text || '';
+            statusTitleInput.value = CURRENT_SETTINGS.status_title || '';
+            statusTextTplInput.value = CURRENT_SETTINGS.status_text_tpl || ''; // CORRIGÉ
+            remainingTextTplInput.value = CURRENT_SETTINGS.remaining_text_tpl || ''; // AJOUTÉ
+            listTitleInput.value = CURRENT_SETTINGS.list_title || ''; // AJOUTÉ
+            limitTitleInput.value = CURRENT_SETTINGS.limit_title || '';
+            limitMessageInput.value = CURRENT_SETTINGS.limit_message || '';
+
+            maxUsersInput.value = CURRENT_SETTINGS.max_users || 5;
+            regOpenInput.checked = CURRENT_SETTINGS.registration_open;
+            reqFNameInput.checked = CURRENT_SETTINGS.require_first_name;
+            reqLNameInput.checked = CURRENT_SETTINGS.require_last_name;
+            reqPhoneInput.checked = CURRENT_SETTINGS.require_phone;
+
+            // 2. Mettre à jour les entêtes de tableau
+            thFirstName.classList.toggle('hidden', !CURRENT_SETTINGS.require_first_name);
+            thLastName.classList.toggle('hidden', !CURRENT_SETTINGS.require_last_name);
+            thPhone.classList.toggle('hidden', !CURRENT_SETTINGS.require_phone);
+            
+            // 3. Rendu du tableau
+            renderRegistrationsTable(ALL_REGISTRATIONS);
+            
+            adminMessageFeedback.textContent = 'Données chargées.';
+            adminMessageFeedback.className = 'message success';
+
+        } catch (error) {
+            console.error('Erreur loadAdminData:', error);
+            adminMessageFeedback.textContent = 'Erreur: Impossible de charger les données de la campagne. (Erreur Serveur/BDD)';
+            adminMessageFeedback.className = 'message error';
+        }
+    };
+
+    // --- Fonction de sauvegarde des settings (CORRIGÉE) ---
+    const saveSettings = async () => {
+        saveButton.disabled = true;
+        adminMessageFeedback.textContent = '';
+        
+        // 1. Création du payload avec les noms de colonnes Supabase CORRIGÉS
+        const newSettings = {
+            title_text: titleInput.value.trim(),
+            subtitle_text: subtitleInput.value.trim(), // CORRIGÉ
+            button_text: buttonInput.value.trim(),
+            
+            status_title: statusTitleInput.value.trim(), 
+            status_text_tpl: statusTextTplInput.value.trim(), // <-- CORRIGÉ : utilise _tpl
+            remaining_text_tpl: remainingTextTplInput.value.trim(), // <-- CORRIGÉ : utilise _tpl
+            list_title: listTitleInput.value.trim(), // CORRIGÉ
+
+            limit_title: limitTitleInput.value.trim(),
+            limit_message: limitMessageInput.value.trim(), 
+            
+            max_users: parseInt(maxUsersInput.value, 10),
+            registration_open: regOpenInput.checked,
+            require_first_name: reqFNameInput.checked,
+            require_last_name: reqLNameInput.checked,
+            require_phone: reqPhoneInput.checked,
+            // N'inclure le mot de passe que s'il est non vide
+            ...(passwordInput.value.trim() && { admin_password: passwordInput.value.trim() }) 
+        };
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/updateSettings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newSettings),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                // Le message d'erreur est renvoyé par le backend (par exemple, si une colonne est manquante)
+                throw new Error(result.message || 'Erreur lors de la sauvegarde.');
+            }
+
+            adminMessageFeedback.textContent = result.message || 'Paramètres sauvegardés !';
+            adminMessageFeedback.className = 'message success';
+            passwordInput.value = ''; 
+            await loadAdminData(); // Recharger pour mettre à jour les affichages
+
+        } catch (error) {
+            adminMessageFeedback.textContent = error.message;
+            adminMessageFeedback.className = 'message error';
+        } finally {
+            saveButton.disabled = false;
+        }
+    };
+
+    // --- Rendu du tableau des inscrits (Actifs/Corbeille) ---
+    const renderRegistrationsTable = (registrations) => {
+        regListBody.innerHTML = '';
+        
+        // Filtrer les inscriptions pour la vue actuelle
+        const activeUsers = registrations.filter(reg => !reg.is_deleted);
+        const trashUsers = registrations.filter(reg => reg.is_deleted);
+        
+        adminRegCount.textContent = activeUsers.length;
+        adminTrashCount.textContent = trashUsers.length;
+        adminMaxCount.textContent = CURRENT_SETTINGS.max_users || 5;
+
+        // Déterminer la liste à afficher et les actions
+        const listToDisplay = (CURRENT_VIEW === 'active') ? activeUsers : trashUsers;
+        
+        // Mettre à jour les classes des boutons
+        viewActiveBtn.classList.toggle('active', CURRENT_VIEW === 'active');
+        viewTrashBtn.classList.toggle('active', CURRENT_VIEW === 'trash');
+
+
+        if (listToDisplay.length === 0) {
+            regListBody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 20px;">${CURRENT_VIEW === 'active' ? 'Aucun inscrit actif pour l\'instant.' : 'La corbeille est vide.'}</td></tr>`;
+            return;
+        }
+
+        listToDisplay.forEach(reg => {
+            const tr = document.createElement('tr');
+            
+            // Email (masqué pour cohérence avec le public, non masqué si vous le souhaitez en Admin)
+            tr.innerHTML += `<td>${reg.email}</td>`;
+            
+            // Prénom (dynamique)
+            if (CURRENT_SETTINGS.require_first_name) {
+                tr.innerHTML += `<td>${reg.first_name || '-'}</td>`;
+            }
+            
+            // Nom (dynamique)
+            if (CURRENT_SETTINGS.require_last_name) {
+                tr.innerHTML += `<td>${reg.last_name || '-'}</td>`;
+            }
+
+            // Téléphone (dynamique)
+            if (CURRENT_SETTINGS.require_phone) {
+                tr.innerHTML += `<td>${reg.phone_number || '-'}</td>`;
+            }
+            
+            // Actions
+            let actionsHtml = `<div class="cell-with-actions">`;
+            
+            // Bouton de suppression / restauration
+            if (CURRENT_VIEW === 'active') {
+                // Bouton de suppression (vers la corbeille)
+                actionsHtml += `<button class="action-btn delete" data-id="${reg.id}" data-action="delete">Supprimer</button>`;
+            } else {
+                // Bouton de restauration (hors de la corbeille)
+                actionsHtml += `<button class="action-btn restore" data-id="${reg.id}" data-action="restore">Restaurer</button>`;
+            }
+            
+            // Bouton de suppression définitive (uniquement dans la corbeille pour le moment)
+            if (CURRENT_VIEW === 'trash') {
+                actionsHtml += `<button class="action-btn delete-force" data-id="${reg.id}" data-action="forceDelete">Définitif</button>`;
+            }
+
+            actionsHtml += `</div>`;
+            tr.innerHTML += `<td>${actionsHtml}</td>`;
+            
+            regListBody.appendChild(tr);
+        });
+
+        // Ajouter l'écouteur d'événements à la liste
+        regListBody.removeEventListener('click', handleRegistrationAction); 
+        regListBody.addEventListener('click', handleRegistrationAction);
+    };
+
+    // --- Gestion de la suppression/restauration ---
+    const handleRegistrationAction = async (e) => {
+        const btn = e.target.closest('.action-btn');
+        if (!btn) return;
+
+        const id = btn.dataset.id;
+        const action = btn.dataset.action;
+        let endpoint = '';
+        let confirmMessage = '';
+
+        if (action === 'delete') {
+            endpoint = 'softDelete';
+            confirmMessage = "Êtes-vous sûr de vouloir mettre cet inscrit à la corbeille ?";
+        } else if (action === 'restore') {
+            endpoint = 'restore';
+            confirmMessage = "Êtes-vous sûr de vouloir restaurer cet inscrit ?";
+        } else if (action === 'forceDelete') {
+             endpoint = 'forceDelete';
+            confirmMessage = "ATTENTION : Êtes-vous sûr de vouloir SUPPRIMER DÉFINITIVEMENT cet inscrit de la BDD ? (Action irréversible)";
+        } else {
+            return;
+        }
+
+        if (action === 'forceDelete' || confirm(confirmMessage)) {
+            adminMessageFeedback.textContent = 'Action en cours...';
+            adminMessageFeedback.className = 'message';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id }),
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || `Erreur lors de l'action '${action}'.`);
+                }
+
+                adminMessageFeedback.textContent = result.message || `Action '${action}' réussie.`;
+                adminMessageFeedback.className = 'message success';
+                
+                // Recharger les données et garder la vue actuelle
+                await loadAdminData();
+
+            } catch (error) {
+                adminMessageFeedback.textContent = error.message;
+                adminMessageFeedback.className = 'message error';
+            }
+        }
+    };
+    
     // --- Gestion du changement de vue ---
     const switchView = (view) => {
         if (CURRENT_VIEW === view) return;
@@ -375,7 +353,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('login-form').addEventListener('submit', handleLogin);
     logoutBtn.addEventListener('click', handleLogout);
     
-    // NOUVEAU: Écouteurs pour les boutons de vue
     viewActiveBtn.addEventListener('click', () => switchView('active'));
     viewTrashBtn.addEventListener('click', () => switchView('trash'));
 
