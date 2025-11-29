@@ -11,57 +11,106 @@
         .admin-section h3 { border-bottom: 1px solid var(--text-secondary); padding-bottom: 0.5rem; margin-bottom: 1rem; }
         .field-control { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
         .field-control label { flex: 1; }
-        .field-control input[type="text"], .field-control input[type="number"] { padding: 0.5rem; border: 1px solid var(--glass-border); border-radius: 4px; background: rgba(0,0,0,0.3); color: var(--text-primary); }
+        .field-control input[type="text"], .field-control input[type="number"], .field-control input[type="password"] { padding: 0.5rem; border: 1px solid var(--glass-border); border-radius: 4px; background: rgba(0,0,0,0.3); color: var(--text-primary); }
         .admin-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
         .admin-table th, .admin-table td { border: 1px solid var(--glass-border); padding: 0.75rem; text-align: left; }
-        .copy-btn { background-color: var(--purple-glow); color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; }
+        .hidden { display: none !important; } 
     </style>
 </head>
 <body>
     <div class="background-animation"></div>
-    <main class="card" style="max-width: 900px;">
+
+    <main class="card" id="admin-login-container" class="hidden">
+        <div class="card-header">
+            <h1 class="title">Connexion Administrateur</h1>
+        </div>
+        <form id="admin-login-form">
+            <div class="field-control">
+                <label for="login-password">Mot de passe :</label>
+                <input type="password" id="login-password" required placeholder="Entrez le mot de passe">
+            </div>
+            <button type="submit" class="cta-button" style="width: 100%; margin-top: 1rem;">Se Connecter</button>
+            <p id="login-message-feedback" class="message"></p>
+        </form>
+    </main>
+
+    <main class="card hidden" id="admin-dashboard-container">
         <div class="card-header">
             <h1 class="title">Dashboard Admin</h1>
-            <p class="subtitle">Configuration de l'Offre Gemini Enterprise</p>
+            <p class="subtitle">Gestion de l'Offre Gemini</p>
         </div>
 
         <section class="admin-section">
-            <h3>Paramètres Globaux</h3>
-            
+            <h3>Paramètres de la Page Utilisateur</h3>
+
             <div class="field-control">
-                <label for="admin-title-text">Titre de la Page :</label>
-                <input type="text" id="admin-title-text">
+                <label for="admin-title-text">Titre Principal :</label>
+                <input type="text" id="admin-title-text" placeholder="Gemini Enterprise">
             </div>
-            
+            <div class="field-control">
+                <label for="admin-subtitle-text">Sous-Titre :</label>
+                <input type="text" id="admin-subtitle-text" placeholder="Hackers Academy X">
+            </div>
             <div class="field-control">
                 <label for="admin-button-text">Texte du Bouton :</label>
-                <input type="text" id="admin-button-text">
+                <input type="text" id="admin-button-text" placeholder="Sécuriser ma place">
             </div>
-            
+
             <div class="field-control">
-                <label for="admin-max-users">Limite de Places :</label>
-                <input type="number" id="admin-max-users" min="1" max="100">
+                <label for="admin-status-title">Titre Statut :</label>
+                <input type="text" id="admin-status-title" placeholder="Accès Anticipé – Vague 1">
             </div>
-             <div class="field-control">
-                <label for="admin-registration-open">Inscriptions Ouvertes :</label>
+            <div class="field-control">
+                <label for="admin-status-text-tpl">Texte Statut (Ex: %count% / %max%) :</label>
+                <input type="text" id="admin-status-text-tpl" placeholder="%count% / %max% utilisateurs enregistrés">
+            </div>
+            <div class="field-control">
+                <label for="admin-remaining-text-tpl">Texte Places Restantes (Ex: %remaining%) :</label>
+                <input type="text" id="admin-remaining-text-tpl" placeholder="Places restantes: %remaining%">
+            </div>
+            <div class="field-control">
+                <label for="admin-list-title">Titre Liste :</label>
+                <input type="text" id="admin-list-title" placeholder="Liste des inscrits :">
+            </div>
+            <div class="field-control">
+                <label for="admin-limit-title">Titre Limite Atteinte :</label>
+                <input type="text" id="admin-limit-title" placeholder="🔥 L’offre est terminée !">
+            </div>
+            <div class="field-control">
+                <label for="admin-limit-message">Message Limite Atteinte :</label>
+                <input type="text" id="admin-limit-message" placeholder="Désolé, les places sont prises.">
+            </div>
+
+            <hr style="border: 1px solid var(--glass-border); margin: 1.5rem 0;">
+
+            <div class="field-control">
+                <label for="admin-max-users">Limite d'Utilisateurs :</label>
+                <input type="number" id="admin-max-users" min="1">
+            </div>
+            <div class="field-control">
+                <label for="admin-registration-open">Inscription Ouverte :</label>
                 <input type="checkbox" id="admin-registration-open">
             </div>
-        </section>
-
-        <section class="admin-section">
-            <h3>Champs de Formulaire Requis</h3>
             <div class="field-control">
-                <label for="admin-require-first-name">Prénom (Nom) :</label>
+                <label for="admin-require-first-name">Exiger Prénom :</label>
                 <input type="checkbox" id="admin-require-first-name">
             </div>
             <div class="field-control">
-                <label for="admin-require-last-name">Nom de Famille :</label>
+                <label for="admin-require-last-name">Exiger Nom de Famille :</label>
                 <input type="checkbox" id="admin-require-last-name">
             </div>
             <div class="field-control">
-                <label for="admin-require-phone">Numéro de Téléphone :</label>
+                <label for="admin-require-phone">Exiger Numéro de Téléphone :</label>
                 <input type="checkbox" id="admin-require-phone">
             </div>
+            
+            <hr style="border: 1px solid var(--glass-border); margin: 1.5rem 0;">
+            
+            <div class="field-control">
+                <label for="admin-password-input">Mot de passe Admin (laissez vide pour ne pas changer) :</label>
+                <input type="password" id="admin-password-input" placeholder="Nouveau mot de passe">
+            </div>
+
             <button id="save-settings-btn" class="cta-button" style="width: 100%; margin-top: 1rem;">Sauvegarder les Paramètres</button>
             <p id="admin-message-feedback" class="message"></p>
         </section>

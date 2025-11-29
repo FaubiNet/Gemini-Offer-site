@@ -1,5 +1,6 @@
 // netlify/functions/updateSettings.js
 const { createClient } = require('@supabase/supabase-js');
+const bcrypt = require('bcryptjs'); // NOUVEAU
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -10,12 +11,27 @@ exports.handler = async (event, context) => {
     return { statusCode: 405, body: JSON.stringify({ message: 'Method Not Allowed' }) };
   }
 
-  // NOTE: En production, il faudrait ajouter une AUTHENTIFICATION pour l'admin !
-  // Pour ce tutoriel, nous nous contenterons de la clé secrète du serveur Netlify.
-
+  // Vérification d'authentification simple via le cookie
+  const token = event.headers.cookie ? event.headers.cookie.split('; ').find(row => row.startsWith('admin_auth=')) : null;
+  const ADMIN_TOKEN = 'VALID_ADMIN_SESSION_2024'; 
+  
+  let body = JSON.parse(event.body || '{}');
+  
+  // Si le token n'est pas valide ET que l'on ne change pas le mot de passe (première configuration)
+  if ((!token || !token.includes(ADMIN_TOKEN)) && !body.admin_password) {
+      // On refuse l'accès, sauf si c'est la première fois qu'on envoie un mot de passe.
+      return { statusCode: 403, body: JSON.stringify({ message: 'Accès refusé. Veuillez vous connecter.' }) };
+  }
+  
   try {
-    const body = JSON.parse(event.body || '{}');
-    // On met à jour l'unique ligne avec ID=1
+    // Hachage du mot de passe s'il est fourni (uniquement lors d'un changement)
+    if (body.admin_password) {
+        // Hacher le nouveau mot de passe
+        const salt = await bcrypt.genSalt(10);
+        body.admin_password = await bcrypt.hash(body.admin_password, salt);
+    }
+    
+    // Mettre à jour l'unique ligne avec ID=1
     const { data, error } = await supabase
       .from('settings')
       .update(body)

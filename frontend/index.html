@@ -20,18 +20,18 @@
     <main class="card">
         <div class="card-header">
             <h1 class="title" id="dynamic-title">Gemini Enterprise</h1>
-            <p class="subtitle">Hackers Academy X</p>
+            <p class="subtitle" id="dynamic-subtitle">Hackers Academy X</p>
         </div>
 
         <div class="status-section">
-            <h2>Accès Anticipé – Vague 1</h2>
+            <h2 id="status-title">Accès Anticipé – Vague 1</h2>
             <div class="progress-bar-container">
                 <div id="progress-bar" class="progress-bar"></div>
             </div>
-            <p class="status-text">
+            <p class="status-text" id="dynamic-status-text">
                 <span id="registered-count">0</span> / <span id="max-users-count">5</span> utilisateurs enregistrés
             </p>
-            <p class="remaining-text">
+            <p class="remaining-text" id="dynamic-remaining-text">
                 Places restantes: <span id="remaining-spots">5</span>
             </p>
         </div>
@@ -49,15 +49,15 @@
         </div>
 
         <div id="limit-reached-container" class="hidden">
-            <h2 class="limit-title">🔥 L’offre Gemini Enterprise – Vague 1 est terminée !</h2>
-            <p class="limit-text">Retourne sur la chaîne Hackers Academy X pour débloquer la 2e vague.</p>
+            <h2 class="limit-title" id="limit-reached-title">🔥 L’offre Gemini Enterprise – Vague 1 est terminée !</h2>
+            <p class="limit-text" id="limit-reached-message">Retourne sur la chaîne Hackers Academy X pour débloquer la 2e vague.</p>
             <a href="https://whatsapp.com/channel/0029Vb5ioJzA2pLD4CZOCq2V" target="_blank" class="cta-button">
                 Retourner à Hackers Academy X
             </a>
         </div>
 
         <div class="registered-list-section">
-            <h3>Liste des inscrits :</h3>
+            <h3 id="list-title">Liste des inscrits :</h3>
             <ul id="email-list">
                 </ul>
         </div>
