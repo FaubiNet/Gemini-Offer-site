@@ -13,24 +13,33 @@
     <div class="background-animation"></div>
     
     <main class="card admin-card"> 
-        <header class="card-header admin-header">
-            <h1 class="title">Dashboard Admin</h1>
-            <button id="logout-btn" class="cta-button">Déconnexion</button>
-        </header>
-        
-        <p id="admin-message-feedback" class="message"></p>
 
+        <!-- ÉCRAN DE CONNEXION ADMIN UNIQUEMENT -->
         <div id="login-form-container">
-            <h3>Connexion Administrateur</h3>
+            <header class="card-header">
+                <h1 class="title">Connexion Administrateur</h1>
+                <p class="subtitle">Entrez le mot de passe admin pour accéder au dashboard.</p>
+            </header>
+
             <form id="login-form">
                 <input type="password" id="login-password-input" placeholder="Mot de passe Admin" required>
-                <button type="submit" id="login-btn" class="cta-button" style="width: 100%;">Se Connecter</button>
+                <button type="submit" id="login-btn" class="cta-button" style="width: 100%;">Se connecter</button>
             </form>
             <p id="login-message-feedback" class="message"></p>
         </div>
 
+        <!-- DASHBOARD ADMIN (CACHÉ TANT QUE NON CONNECTÉ) -->
         <div id="admin-dashboard" class="hidden">
-            
+            <header class="card-header admin-header">
+                <div>
+                    <h1 class="title">Dashboard Admin</h1>
+                    <p class="subtitle">Gérer le texte, la limite d'inscrits et la liste des emails.</p>
+                </div>
+                <button id="logout-btn" class="cta-button">Déconnexion</button>
+            </header>
+
+            <p id="admin-message-feedback" class="message"></p>
+
             <section class="admin-section settings-section">
                 <h3>Paramètres Textes & Limites</h3>
                 
@@ -38,30 +47,36 @@
                     <label for="admin-title-text">Titre principal de la page :</label>
                     <input type="text" id="admin-title-text" placeholder="Titre principal" required>
                 </div>
+
                 <div class="field-control">
-                    <label for="admin-subtitle-text">Sous-titre de la page :</label>
-                    <input type="text" id="admin-subtitle-text" placeholder="Sous-titre (ex: Hackers Academy X)">
+                    <label for="admin-subtitle-text">Sous-titre (ligne sous le titre) :</label>
+                    <input type="text" id="admin-subtitle-text" placeholder="Sous-titre" required>
                 </div>
+
                 <div class="field-control">
-                    <label for="admin-button-text">Texte du bouton d'inscription :</label>
-                    <input type="text" id="admin-button-text" placeholder="Texte du bouton" required>
+                    <label for="admin-button-text">Texte du bouton :</label>
+                    <input type="text" id="admin-button-text" placeholder="Sécuriser ma place" required>
                 </div>
 
                 <div class="separator"></div>
-                
-                <h4>Textes de Statut (Barre de Progression)</h4>
+
+                <h4>Bloc de statut</h4>
+
                 <div class="field-control">
-                    <label for="admin-status-title">Titre de Statut (ex: Vague 1) :</label>
+                    <label for="admin-status-title">Titre de la section de statut :</label>
                     <input type="text" id="admin-status-title" placeholder="Accès Anticipé – Vague 1" required>
                 </div>
+
                 <div class="field-control">
-                    <label for="admin-status-text-tpl">Template Texte de Statut (%count%, %max%) :</label>
-                    <input type="text" id="admin-status-text-tpl" placeholder="%count% / %max% utilisateurs enregistrés" required>
+                    <label for="admin-status-text-tpl">Texte supplémentaire sous les compteurs (sans nombres) :</label>
+                    <input type="text" id="admin-status-text-tpl" placeholder="Premiers arrivés, premiers servis.">
                 </div>
+
                 <div class="field-control">
-                    <label for="admin-remaining-text-tpl">Template Texte Places Restantes (%remaining%) :</label>
-                    <input type="text" id="admin-remaining-text-tpl" placeholder="Places restantes: %remaining%" required>
+                    <label for="admin-remaining-text-tpl">Texte secondaire (optionnel) :</label>
+                    <input type="text" id="admin-remaining-text-tpl" placeholder="Offre réservée à un nombre limité d'utilisateurs.">
                 </div>
+
                 <div class="field-control">
                     <label for="admin-list-title">Titre de la liste des inscrits :</label>
                     <input type="text" id="admin-list-title" placeholder="Liste des inscrits :" required>
@@ -92,46 +107,52 @@
                 </div>
 
                 <div class="field-control checkbox-control">
-                    <label for="admin-require-first-name">Exiger le Prénom ?</label>
+                    <label for="admin-require-first-name">Demander le prénom ?</label>
                     <input type="checkbox" id="admin-require-first-name">
                 </div>
+
                 <div class="field-control checkbox-control">
-                    <label for="admin-require-last-name">Exiger le Nom ?</label>
+                    <label for="admin-require-last-name">Demander le nom ?</label>
                     <input type="checkbox" id="admin-require-last-name">
                 </div>
+
                 <div class="field-control checkbox-control">
-                    <label for="admin-require-phone">Exiger le Téléphone ?</label>
+                    <label for="admin-require-phone">Demander le numéro de téléphone ?</label>
                     <input type="checkbox" id="admin-require-phone">
                 </div>
 
                 <div class="separator"></div>
-                
+
                 <div class="field-control">
-                    <label for="admin-password-input">Mot de passe Admin (laissez vide pour ne pas changer) :</label>
-                    <input type="password" id="admin-password-input" placeholder="Nouveau mot de passe">
+                    <label for="admin-password-input">Nouveau mot de passe admin (laisser vide pour ne pas changer) :</label>
+                    <input type="password" id="admin-password-input" placeholder="Nouveau mot de passe admin">
                 </div>
 
-                <button id="save-settings-btn" class="cta-button" style="width: 100%; margin-top: 1rem;">Sauvegarder les Paramètres</button>
+                <button id="save-settings-btn" class="cta-button" type="button" style="margin-top: 1rem; width: 100%;">Sauvegarder les paramètres</button>
             </section>
 
-            <section class="registered-list-section admin-section">
-                
-                <div class="admin-views-container">
-                    <button id="view-active-btn" class="view-switch-btn active">Inscrits Actifs (<span id="admin-registered-count">0</span>)</button>
-                    <button id="view-trash-btn" class="view-switch-btn">Corbeille (<span id="admin-trash-count">0</span>)</button>
-                    <span style="color: var(--text-secondary); margin-left: auto; font-size: 0.9rem;">
-                        Limite Max : <span id="admin-max-count">5</span>
-                    </span>
+            <section class="admin-section">
+                <h3>Inscriptions & Corbeille</h3>
+
+                <div class="field-control">
+                    <span>Inscrits actifs : <strong id="admin-registered-count">0</strong></span>
+                    <span>Dans la corbeille : <strong id="admin-trash-count">0</strong></span>
+                    <span>Limite max : <strong id="admin-max-count">5</strong></span>
                 </div>
-                
+
+                <div class="admin-views-container">
+                    <button id="view-active-btn" class="view-switch-btn active" type="button">Actifs</button>
+                    <button id="view-trash-btn" class="view-switch-btn" type="button">Corbeille</button>
+                </div>
+
                 <div class="table-container">
                     <table class="admin-table">
                         <thead>
                             <tr>
                                 <th>Email</th>
-                                <th id="th-first-name" class="hidden">Prénom</th>
-                                <th id="th-last-name" class="hidden">Nom</th>
-                                <th id="th-phone" class="hidden">Numéro</th>
+                                <th id="th-first-name">Prénom</th>
+                                <th id="th-last-name">Nom</th>
+                                <th id="th-phone">Numéro</th>
                                 <th id="th-actions">Actions</th>
                             </tr>
                         </thead>
@@ -141,7 +162,8 @@
                 </div>
             </section>
         </div>
-        </main>
+    </main>
+
     <script src="admin.js"></script>
 </body>
 </html>

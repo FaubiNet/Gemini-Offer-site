@@ -431,6 +431,42 @@ body {
     vertical-align: middle;
 }
 
+/* Cellules avec texte + bouton copier */
+
+.cell-with-text-and-copy {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.cell-with-text-and-copy .cell-text {
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Bouton Copier */
+
+.copy-btn {
+    background: none;
+    border: 1px solid var(--glass-border);
+    border-radius: 4px;
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: color 0.2s, background-color 0.2s, border-color 0.2s;
+}
+
+.copy-btn:hover {
+    color: var(--blue-glow);
+    border-color: var(--blue-glow);
+    background-color: rgba(0, 119, 255, 0.08);
+}
+
+/* Actions */
+
 .cell-with-actions {
     display: flex;
     align-items: center;
@@ -511,7 +547,7 @@ body {
     }
 }
 
-/* FORMULAIRE DE CONNEXION ADMIN */
+/* FORM CONNEXION ADMIN */
 
 #login-form {
     display: flex;

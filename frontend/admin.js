@@ -1,4 +1,4 @@
-// frontend/admin.js
+// admin.js
 document.addEventListener('DOMContentLoaded', () => {
     // --- Éléments du DOM ---
     const adminDashboard = document.getElementById('admin-dashboard');
@@ -8,14 +8,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Champs de settings
     const titleInput = document.getElementById('admin-title-text');
-    const subtitleInput = document.getElementById('admin-subtitle-text');
+    const subtitleInput = document.getElementBy('admin-subtitle-text');
     const buttonInput = document.getElementById('admin-button-text');
     
     const statusTitleInput = document.getElementById('admin-status-title');
     const statusTextTplInput = document.getElementById('admin-status-text-tpl');
     const remainingTextTplInput = document.getElementById('admin-remaining-text-tpl');
     const listTitleInput = document.getElementById('admin-list-title');
-    
+
     const limitTitleInput = document.getElementById('admin-limit-title');
     const limitMessageInput = document.getElementById('admin-limit-message');
 
@@ -48,6 +48,29 @@ document.addEventListener('DOMContentLoaded', () => {
     let ALL_REGISTRATIONS = [];
     let CURRENT_SETTINGS = {};
     let CURRENT_VIEW = 'active'; // 'active' | 'trash'
+
+    // --- Utilitaire : copier dans le presse-papier ---
+    const copyToClipboard = async (text) => {
+        if (!text) return;
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(text);
+            } else {
+                const tempInput = document.createElement('textarea');
+                tempInput.value = text;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+            }
+            adminMessageFeedback.textContent = `Copié: ${text}`;
+            adminMessageFeedback.className = 'message success';
+        } catch (err) {
+            console.error('Erreur copyToClipboard:', err);
+            adminMessageFeedback.textContent = 'Impossible de copier dans le presse-papier.';
+            adminMessageFeedback.className = 'message error';
+        }
+    };
 
     // --- Connexion admin ---
     const handleLogin = async (e) => {
@@ -112,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
             CURRENT_SETTINGS = data.settings || {};
             ALL_REGISTRATIONS = data.registrations || [];
 
-            // 1. Charger les settings dans les inputs
+            // 1. Settings -> inputs
             titleInput.value = CURRENT_SETTINGS.title_text || '';
             subtitleInput.value = CURRENT_SETTINGS.subtitle_text || '';
             buttonInput.value = CURRENT_SETTINGS.button_text || '';
@@ -134,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
             thLastName.classList.toggle('hidden', !CURRENT_SETTINGS.require_last_name);
             thPhone.classList.toggle('hidden', !CURRENT_SETTINGS.require_phone);
             
-            // 3. Rendu du tableau
+            // 3. Tableau
             renderRegistrationsTable(ALL_REGISTRATIONS);
             
             adminMessageFeedback.textContent = 'Données chargées.';
@@ -227,18 +250,50 @@ document.addEventListener('DOMContentLoaded', () => {
         listToDisplay.forEach((reg) => {
             const tr = document.createElement('tr');
             
-            tr.innerHTML += `<td>${reg.email}</td>`;
+            // --- Email + bouton copier ---
+            const emailHtml = `
+                <div class="cell-with-text-and-copy">
+                    <span class="cell-text">${reg.email}</span>
+                    <button 
+                        class="copy-btn" 
+                        type="button"
+                        data-copy="${reg.email}" 
+                        title="Copier l'email">
+                        Copier
+                    </button>
+                </div>
+            `;
+            tr.innerHTML += `<td>${emailHtml}</td>`;
             
+            // --- Prénom ---
             if (CURRENT_SETTINGS.require_first_name) {
                 tr.innerHTML += `<td>${reg.first_name || '-'}</td>`;
             }
+            // --- Nom ---
             if (CURRENT_SETTINGS.require_last_name) {
                 tr.innerHTML += `<td>${reg.last_name || '-'}</td>`;
             }
+            // --- Téléphone + bouton copier si dispo ---
             if (CURRENT_SETTINGS.require_phone) {
-                tr.innerHTML += `<td>${reg.phone_number || '-'}</td>`;
+                let phoneCell = '-';
+                if (reg.phone_number) {
+                    phoneCell = `
+                        <div class="cell-with-text-and-copy">
+                            <span class="cell-text">${reg.phone_number}</span>
+                            <button 
+                                class="copy-btn" 
+                                type="button"
+                                data-copy="${reg.phone_number}" 
+                                title="Copier le numéro">
+                                Copier
+                            </button>
+                        </div>
+                    `;
+                }
+                tr.innerHTML += `<td>${phoneCell}</td>`;
             }
             
+            // --- Actions (corbeille / restaurer / supprimer) ---
             let actionsHtml = `<div class="cell-with-actions">`;
             
             if (CURRENT_VIEW === 'active') {
@@ -254,12 +309,19 @@ document.addEventListener('DOMContentLoaded', () => {
             regListBody.appendChild(tr);
         });
 
-        regListBody.removeEventListener('click', handleRegistrationAction); 
-        regListBody.addEventListener('click', handleRegistrationAction);
+        regListBody.removeEventListener('click', handleTableClick); 
+        regListBody.addEventListener('click', handleTableClick);
     };
 
-    // --- Actions sur les inscrits ---
-    const handleRegistrationAction = async (e) => {
+    // --- Gestion click tableau (copier + actions) ---
+    const handleTableClick = async (e) => {
+        const copyBtnEl = e.target.closest('.copy-btn');
+        if (copyBtnEl) {
+            const value = copyBtnEl.dataset.copy;
+            await copyToClipboard(value);
+            return;
+        }
+
         const btn = e.target.closest('.action-btn');
         if (!btn) return;
 
@@ -325,7 +387,6 @@ document.addEventListener('DOMContentLoaded', () => {
     viewActiveBtn.addEventListener('click', () => switchView('active'));
     viewTrashBtn.addEventListener('click', () => switchView('trash'));
 
-    // Si un cookie admin est présent, on affiche directement le dashboard
     const hasAdminCookie = document.cookie.includes('admin_auth=VALID_ADMIN_SESSION_2024');
     if (hasAdminCookie) {
         loginFormContainer.classList.add('hidden');

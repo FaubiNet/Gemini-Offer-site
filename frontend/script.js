@@ -32,28 +32,21 @@ document.addEventListener('DOMContentLoaded', () => {
     let CURRENT_SETTINGS = {}; 
     const API_BASE_URL = '/api';
 
-    // --- FONCTION: Masquage de l'email ---
     const maskEmail = (email) => {
         if (!email || typeof email !== 'string') return '';
         const parts = email.split('@');
         if (parts.length !== 2) return email;
 
         const [localPart, domain] = parts;
-        
-        // Afficher les 3 premiers caractères du nom d'utilisateur, puis "****"
         const maskedLocalPart = localPart.length > 3 
-            ? localPart.substring(0, 3) + '****' + localPart.substring(localPart.length - 4)
+            ? localPart.substring(0, 3) + '****' + localPart.substring(localPart.length - 2)
             : '****';
-            
         return `${maskedLocalPart}@${domain}`;
     };
 
-
-    // --- Fonctions de mise à jour de l'UI (CORRIGÉE) ---
-
     const updateUI = (settings, registrations) => {
-        // Le endpoint getEmails.js renvoie toutes les inscriptions; on filtre ici les actives côté frontend.
         const allRegistrations = Array.isArray(registrations) ? registrations : [];
+        // ⚠️ On NE GARDE QUE les emails NON supprimés (pas dans Trash)
         const activeRegistrations = allRegistrations.filter(reg => !reg.is_deleted);
 
         const count = activeRegistrations.length;
@@ -61,42 +54,34 @@ document.addEventListener('DOMContentLoaded', () => {
         const remaining = Math.max(0, MAX_USERS - count);
         const percentage = (MAX_USERS > 0) ? (count / MAX_USERS) * 100 : 0;
 
-        // 1. Mettre à jour les textes dynamiques
+        // Titres
         dynamicTitleEl.textContent = settings.title_text || 'Gemini Enterprise';
         dynamicSubtitleEl.textContent = settings.subtitle_text || 'Hackers Academy X';
         submitButton.textContent = settings.button_text || 'Sécuriser ma place';
-        
-        // Statut Title
         statusTitleEl.textContent = settings.status_title || 'Accès Anticipé – Vague 1';
-        
-        // Libellés de statut (on évite de dupliquer les nombres)
-        dynamicRemainingTextEl.textContent = (settings.remaining_text_tpl || 'Places restantes:');
-        // On ne met pas de texte après le nombre de places restantes pour éviter les doublons
-        dynamicStatusTextEl.textContent = '';
-        
-        // List Title
-        listTitleEl.textContent = settings.list_title || 'Liste des inscrits :';
 
-        // Limit Reached Message
+        // On laisse la ligne "X / Y ... Places restantes : Z" gérer les nombres
+        // Ici tu peux mettre juste du texte sans chiffres si tu veux
+        dynamicStatusTextEl.textContent = settings.status_text_tpl || '';
+        dynamicRemainingTextEl.textContent = settings.remaining_text_tpl || '';
+
+        listTitleEl.textContent = settings.list_title || 'Liste des inscrits :';
         limitReachedTitleEl.textContent = settings.limit_title || 'L’offre est terminée !';
         limitReachedMessageEl.textContent = settings.limit_message || 'Retourne sur la chaîne Hackers Academy X...';
 
-        // 2. Mettre à jour la barre et les compteurs
         registeredCountEl.textContent = count;
         maxUsersCountEl.textContent = MAX_USERS;
         remainingSpotsEl.textContent = remaining;
         progressBarEl.style.width = `${percentage}%`;
 
-        // 3. Afficher/Masquer les champs requis
         firstNameInput.classList.toggle('hidden', !settings.require_first_name);
         lastNameInput.classList.toggle('hidden', !settings.require_last_name);
         phoneInput.classList.toggle('hidden', !settings.require_phone);
         
-        firstNameInput.required = settings.require_first_name;
-        lastNameInput.required = settings.require_last_name;
-        phoneInput.required = settings.require_phone;
+        firstNameInput.required = !!settings.require_first_name;
+        lastNameInput.required = !!settings.require_last_name;
+        phoneInput.required = !!settings.require_phone;
 
-        // 4. Afficher/Masquer le formulaire ou le message de limite
         if (count >= MAX_USERS || !settings.registration_open) {
             registrationFormContainer.classList.add('hidden');
             limitReachedContainer.classList.remove('hidden');
@@ -106,7 +91,6 @@ document.addEventListener('DOMContentLoaded', () => {
             submitButton.disabled = false;
         }
 
-        // 5. Afficher la liste des inscrits avec masquage
         emailListEl.innerHTML = '';
         if (count === 0) {
             const li = document.createElement('li');
@@ -123,8 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-
-    // --- Fonctions d'API ---
     const fetchEmails = async () => {
         try {
             const response = await fetch(`${API_BASE_URL}/getEmails`); 
@@ -132,7 +114,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const data = await response.json();
             CURRENT_SETTINGS = data.settings || {};
-            
             updateUI(data.settings, data.registrations || []); 
 
         } catch (error) {
@@ -185,7 +166,6 @@ document.addEventListener('DOMContentLoaded', () => {
             messageFeedbackEl.textContent = result.message;
             messageFeedbackEl.className = 'message success';
             
-            // Réinitialisation des inputs
             emailInput.value = '';
             firstNameInput.value = '';
             lastNameInput.value = '';

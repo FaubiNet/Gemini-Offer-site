@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,37 +14,46 @@
     
     <main class="card">
         <div class="card-header">
-            <h1 class="title" id="dynamic-title">Gemini Enterprise</h1>
-            <p class="subtitle" id="dynamic-subtitle">Hackers Academy X</p>
+            <h1 id="dynamic-title" class="title">Gemini Enterprise – Accès anticipé</h1>
+            <p id="dynamic-subtitle" class="subtitle">Hackers Academy X</p>
         </div>
 
-        <div class="status-section">
+        <section class="status-section">
             <h2 id="status-title">Accès Anticipé – Vague 1</h2>
+
             <div class="progress-bar-container">
                 <div id="progress-bar" class="progress-bar"></div>
             </div>
+
+            <!-- LIGNE UNIQUE AVEC LES CHIFFRES -->
             <p class="status-text">
-                <span id="registered-count">0</span> / <span id="max-users-count">5</span> places prises | 
-                <span id="dynamic-remaining-text">Reste</span> <span id="remaining-spots">5</span> <span id="dynamic-status-text">places restantes</span>
+                <span id="registered-count">0</span>
+                /
+                <span id="max-users-count">5</span>
+                places prises • Places restantes :
+                <span id="remaining-spots">5</span>
             </p>
-        </div>
-        
-        <div id="registration-form-container">
+
+            <!-- Lignes optionnelles pour du texte SANS nombres -->
+            <p id="dynamic-status-text" class="status-text"></p>
+            <p id="dynamic-remaining-text" class="status-text"></p>
+        </section>
+
+        <section id="registration-form-container">
             <form id="email-form">
-                <input type="text" id="first-name-input" name="first_name" placeholder="Prénom" class="dynamic-input hidden">
-                <input type="text" id="last-name-input" name="last_name" placeholder="Nom de famille" class="dynamic-input hidden">
-                <input type="tel" id="phone-input" name="phone_number" placeholder="Numéro de téléphone" class="dynamic-input hidden">
-                
-                <input type="email" id="email-input" placeholder="ton.email@exemple.com" required autocomplete="email">
-                <button type="submit" id="submit-button" class="cta-button">Sécuriser ma place</button>
+                <input type="email" id="email-input" placeholder="Votre adresse email" required />
+                <input type="text" id="first-name-input" class="hidden" placeholder="Prénom" />
+                <input type="text" id="last-name-input" class="hidden" placeholder="Nom" />
+                <input type="tel" id="phone-input" class="hidden" placeholder="Numéro de téléphone" />
+                <button id="submit-button" class="cta-button" type="submit">Sécuriser ma place</button>
             </form>
             <p id="message-feedback" class="message"></p>
-        </div>
+        </section>
 
         <div id="limit-reached-container" class="hidden">
-            <h2 class="limit-title" id="limit-reached-title">🔥 L’offre Gemini Enterprise – Vague 1 est terminée !</h2>
-            <p class="limit-text" id="limit-reached-message">Retourne sur la chaîne Hackers Academy X pour débloquer la 2e vague.</p>
-            <a href="https://whatsapp.com/channel/0029Vb5ioJzA2pLD4CZOCq2V" target="_blank" class="cta-button">
+            <h2 id="limit-reached-title">L’offre est terminée !</h2>
+            <p id="limit-reached-message">Retourne sur la chaîne Hackers Academy X...</p>
+            <a href="https://t.me/hackersacademyx" class="cta-button">
                 Retourner à Hackers Academy X
             </a>
         </div>
