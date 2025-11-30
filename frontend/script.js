@@ -1,4 +1,3 @@
-// frontend/script.js
 document.addEventListener('DOMContentLoaded', () => {
     // --- Éléments du DOM ---
     const registeredCountEl = document.getElementById('registered-count');
@@ -32,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let CURRENT_SETTINGS = {}; 
     const API_BASE_URL = '/api';
 
+    // --- Masquage d'email pour la liste publique ---
     const maskEmail = (email) => {
         if (!email || typeof email !== 'string') return '';
         const parts = email.split('@');
@@ -44,9 +44,22 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${maskedLocalPart}@${domain}`;
     };
 
+    // --- Remplacement des placeholders dans les textes DB ---
+    // %count%  => nombre d'inscrits
+    // %max%    => max_users
+    // %remaining% => places restantes
+    const applyPlaceholders = (text, { count, max, remaining }) => {
+        if (!text) return '';
+        return text
+            .replace(/%count%/g, count)
+            .replace(/%max%/g, max)
+            .replace(/%remaining%/g, remaining);
+    };
+
+    // --- Mise à jour complète de l'UI ---
     const updateUI = (settings, registrations) => {
         const allRegistrations = Array.isArray(registrations) ? registrations : [];
-        // ⚠️ On NE GARDE QUE les emails NON supprimés (pas dans Trash)
+        // On NE GARDE QUE les emails NON supprimés (pas dans la corbeille)
         const activeRegistrations = allRegistrations.filter(reg => !reg.is_deleted);
 
         const count = activeRegistrations.length;
@@ -54,26 +67,42 @@ document.addEventListener('DOMContentLoaded', () => {
         const remaining = Math.max(0, MAX_USERS - count);
         const percentage = (MAX_USERS > 0) ? (count / MAX_USERS) * 100 : 0;
 
-        // Titres
+        // Titres principaux
         dynamicTitleEl.textContent = settings.title_text || 'Gemini Enterprise';
         dynamicSubtitleEl.textContent = settings.subtitle_text || 'Hackers Academy X';
         submitButton.textContent = settings.button_text || 'Sécuriser ma place';
         statusTitleEl.textContent = settings.status_title || 'Accès Anticipé – Vague 1';
 
-        // On laisse la ligne "X / Y ... Places restantes : Z" gérer les nombres
-        // Ici tu peux mettre juste du texte sans chiffres si tu veux
-        dynamicStatusTextEl.textContent = settings.status_text_tpl || '';
-        dynamicRemainingTextEl.textContent = settings.remaining_text_tpl || '';
+        // Textes dynamiques avec placeholders venant de la DB
+        const statusTpl = settings.status_text_tpl || '';
+        const remainingTpl = settings.remaining_text_tpl || '';
+
+        const replacedStatusText = applyPlaceholders(statusTpl, {
+            count,
+            max: MAX_USERS,
+            remaining,
+        });
+
+        const replacedRemainingText = applyPlaceholders(remainingTpl, {
+            count,
+            max: MAX_USERS,
+            remaining,
+        });
+
+        dynamicStatusTextEl.textContent = replacedStatusText;
+        dynamicRemainingTextEl.textContent = replacedRemainingText;
 
         listTitleEl.textContent = settings.list_title || 'Liste des inscrits :';
         limitReachedTitleEl.textContent = settings.limit_title || 'L’offre est terminée !';
         limitReachedMessageEl.textContent = settings.limit_message || 'Retourne sur la chaîne Hackers Academy X...';
 
+        // Ligne : "X / Y places prises | Places restantes : Z"
         registeredCountEl.textContent = count;
         maxUsersCountEl.textContent = MAX_USERS;
         remainingSpotsEl.textContent = remaining;
         progressBarEl.style.width = `${percentage}%`;
 
+        // Champs conditionnels
         firstNameInput.classList.toggle('hidden', !settings.require_first_name);
         lastNameInput.classList.toggle('hidden', !settings.require_last_name);
         phoneInput.classList.toggle('hidden', !settings.require_phone);
@@ -82,6 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
         lastNameInput.required = !!settings.require_last_name;
         phoneInput.required = !!settings.require_phone;
 
+        // Si plein ou fermé, on masque le formulaire
         if (count >= MAX_USERS || !settings.registration_open) {
             registrationFormContainer.classList.add('hidden');
             limitReachedContainer.classList.remove('hidden');
@@ -91,6 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
             submitButton.disabled = false;
         }
 
+        // Liste des inscrits (masqués)
         emailListEl.innerHTML = '';
         if (count === 0) {
             const li = document.createElement('li');
@@ -107,6 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- Récupération des données depuis l'API ---
     const fetchEmails = async () => {
         try {
             const response = await fetch(`${API_BASE_URL}/getEmails`); 
@@ -129,7 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    
+    // --- Soumission du formulaire ---
     const handleFormSubmit = async (e) => {
         e.preventDefault();
         
@@ -177,6 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
             messageFeedbackEl.textContent = error.message;
             messageFeedbackEl.className = 'message error';
         } finally {
+            // On ne réactive que si ce n'est pas plein et que les inscriptions sont ouvertes
             if (parseInt(registeredCountEl.textContent, 10) < MAX_USERS && CURRENT_SETTINGS.registration_open) {
                 submitButton.disabled = false;
                 submitButton.textContent = CURRENT_SETTINGS.button_text || 'Sécuriser ma place';
@@ -184,6 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- Listeners + init ---
     emailForm.addEventListener('submit', handleFormSubmit);
     fetchEmails();
 });

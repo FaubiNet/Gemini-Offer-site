@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Champs de settings
     const titleInput = document.getElementById('admin-title-text');
-    const subtitleInput = document.getElementBy('admin-subtitle-text');
+    const subtitleInput = document.getElementById('admin-subtitle-text'); // ✅ FIX ICI
     const buttonInput = document.getElementById('admin-button-text');
     
     const statusTitleInput = document.getElementById('admin-status-title');
