@@ -1,75 +1,75 @@
 // netlify/functions/updateSettings.js
 const { createClient } = require('@supabase/supabase-js');
+
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: JSON.stringify({ message: 'Method Not Allowed' }) };
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ message: 'Method Not Allowed' }),
+    };
   }
 
   try {
     const body = JSON.parse(event.body || '{}');
-    let updateData = { ...body };
-    
-    // --- Début du filtrage de sécurité (à supprimer après la mise à jour BDD) ---
-    // CORRECTION CRITIQUE: Filtrage des clés pour éviter l'erreur Supabase PGRST204 
-    // si les nouvelles colonnes n'existent pas encore dans la base de données.
-    // Clés standard qui DOIVENT exister :
-    const safeKeys = [
-        'title_text', 'button_text', 'max_users', 'registration_open', 
-        'require_first_name', 'require_last_name', 'require_phone', 'admin_password',
-        
-        // Clés qui doivent être ajoutées manuellement dans Supabase (type text)
-        'status_title', 'status_text', 'limit_title', 'limit_message' 
+
+    // Champs autorisés
+    const allowedFields = [
+      'title_text',
+      'subtitle_text',
+      'button_text',
+      'status_title',
+      'status_text_tpl',
+      'remaining_text_tpl',
+      'list_title',
+      'limit_title',
+      'limit_message',
+      'max_users',
+      'registration_open',
+      'require_first_name',
+      'require_last_name',
+      'require_phone',
+      'admin_password',
     ];
 
-    const finalUpdateData = {};
-    for (const key in updateData) {
-        if (safeKeys.includes(key)) {
-            finalUpdateData[key] = updateData[key];
-        }
+    const updateData = {};
+    for (const key of allowedFields) {
+      if (Object.prototype.hasOwnProperty.call(body, key)) {
+        updateData[key] = body[key];
+      }
     }
-    updateData = finalUpdateData;
 
     if (Object.keys(updateData).length === 0) {
-        return { 
-            statusCode: 400, 
-            body: JSON.stringify({ message: 'Aucun paramètre valide à mettre à jour. Veuillez vérifier vos entrées.' }) 
-        };
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ message: 'Aucun paramètre à mettre à jour.' }),
+      };
     }
-    // --- Fin du filtrage de sécurité ---
 
-
-    // Gérer le mot de passe
-    if (!updateData.admin_password) {
-        delete updateData.admin_password;
-    }
-    
-    // 2. Mettre à jour la ligne unique avec ID=1
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('settings')
       .update(updateData)
-      .eq('id', 1)
-      .select()
-      .single();
+      .eq('id', 1);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Erreur updateSettings:', error);
+      throw error;
+    }
 
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: 'Paramètres mis à jour avec succès.', settings: data }),
+      body: JSON.stringify({ message: 'Paramètres mis à jour avec succès.' }),
     };
-
   } catch (error) {
-    console.error('Erreur updateSettings:', error);
-    // Renvoie un message plus clair à l'Admin
+    console.error('Erreur updateSettings (catch):', error);
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: `Erreur serveur: La colonne est manquante ou le format est invalide. (Vérifiez votre BDD pour les colonnes status_text, limit_title, etc.)` }),
+      body: JSON.stringify({
+        message: error.message || 'Erreur serveur lors de la mise à jour des paramètres.',
+      }),
     };
   }
 };

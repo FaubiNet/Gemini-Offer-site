@@ -7,45 +7,46 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 exports.handler = async (event, context) => {
   try {
-    // 1. Récupérer les paramètres (settings)
+    // 1. Charger les paramètres (settings)
     const { data: settings, error: settingsError } = await supabase
-        .from('settings')
-        .select('*')
-        .eq('id', 1)
-        .single(); // Attendre une seule ligne (ID=1)
-    
+      .from('settings')
+      .select('*')
+      .eq('id', 1)
+      .single();
+
     if (settingsError) {
-        console.error('Erreur getEmails - settings:', settingsError);
-        throw new Error('Erreur de connexion aux données. (Vérifiez la ligne ID=1 dans la table settings)');
+      console.error('Erreur getEmails - settings:', settingsError);
+      throw new Error('Erreur configuration settings (ID=1).');
     }
 
-    // 2. Récupérer SEULEMENT les inscriptions ACTIVES (is_deleted = false)
-    // CORRECTION: Les emails dans la corbeille (is_deleted: true) ne sont pas comptés/affichés ici.
+    // 2. Charger toutes les inscriptions (actives + corbeille)
     const { data: registrations, error: regError } = await supabase
       .from('registrations')
-      // S'assurer que tous les champs dynamiques sont sélectionnés
-      .select('email, first_name, last_name, phone_number') 
-      .eq('is_deleted', false) // <--- CORRECTION CRITIQUE
-      .order('created_at', { ascending: true }); // Trier par ordre d'arrivée
+      .select('id, email, first_name, last_name, phone_number, is_deleted, created_at')
+      .order('created_at', { ascending: true });
 
-    if (regError) throw regError;
+    if (regError) {
+      console.error('Erreur getEmails - registrations:', regError);
+      throw regError;
+    }
 
-    // 3. Renvoie un objet contenant les deux sets de données
+    // 3. Retourner settings + toutes les inscriptions
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-          settings: settings, 
-          registrations: registrations 
+      body: JSON.stringify({
+        settings,
+        registrations: registrations || [],
       }),
     };
-
   } catch (error) {
     console.error('Erreur getEmails:', error);
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: 'Erreur interne du serveur lors de la récupération des emails.' }),
+      body: JSON.stringify({
+        message: 'Erreur interne du serveur lors de la récupération des emails.',
+      }),
     };
   }
 };

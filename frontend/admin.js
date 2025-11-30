@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const viewActiveBtn = document.getElementById('view-active-btn');
     const viewTrashBtn = document.getElementById('view-trash-btn');
 
-    // Entêtes
+    // Entêtes colonnes conditionnelles
     const thFirstName = document.getElementById('th-first-name');
     const thLastName = document.getElementById('th-last-name');
     const thPhone = document.getElementById('th-phone');
@@ -72,9 +72,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(result.message || 'Erreur de connexion.');
             }
             
-            // Cookie de session admin (côté client)
+            // Cookie admin 24h
             document.cookie = "admin_auth=VALID_ADMIN_SESSION_2024; path=/; max-age=" + (60 * 60 * 24);
-
+            
             loginFormContainer.classList.add('hidden');
             adminDashboard.classList.remove('hidden');
             adminMessageFeedback.textContent = 'Connexion réussie.';
@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
             CURRENT_SETTINGS = data.settings || {};
             ALL_REGISTRATIONS = data.registrations || [];
 
-            // 1. Settings -> inputs
+            // 1. Charger les settings dans les inputs
             titleInput.value = CURRENT_SETTINGS.title_text || '';
             subtitleInput.value = CURRENT_SETTINGS.subtitle_text || '';
             buttonInput.value = CURRENT_SETTINGS.button_text || '';
@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
             thLastName.classList.toggle('hidden', !CURRENT_SETTINGS.require_last_name);
             thPhone.classList.toggle('hidden', !CURRENT_SETTINGS.require_phone);
             
-            // 3. Tableau
+            // 3. Rendu du tableau
             renderRegistrationsTable(ALL_REGISTRATIONS);
             
             adminMessageFeedback.textContent = 'Données chargées.';
@@ -162,7 +162,6 @@ document.addEventListener('DOMContentLoaded', () => {
             status_text_tpl: statusTextTplInput.value.trim(),
             remaining_text_tpl: remainingTextTplInput.value.trim(),
             list_title: listTitleInput.value.trim(),
-
             limit_title: limitTitleInput.value.trim(),
             limit_message: limitMessageInput.value.trim(), 
             
@@ -204,14 +203,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderRegistrationsTable = (registrations) => {
         regListBody.innerHTML = '';
         
-        const activeUsers = registrations.filter((reg) => reg.status === 'active');
-        const trashUsers = registrations.filter((reg) => reg.status === 'trashed');
+        const activeUsers = registrations.filter(reg => !reg.is_deleted);
+        const trashUsers = registrations.filter(reg => reg.is_deleted);
         
         adminRegCount.textContent = activeUsers.length;
         adminTrashCount.textContent = trashUsers.length;
         adminMaxCount.textContent = CURRENT_SETTINGS.max_users || 5;
 
-        const listToDisplay = CURRENT_VIEW === 'active' ? activeUsers : trashUsers;
+        const listToDisplay = (CURRENT_VIEW === 'active') ? activeUsers : trashUsers;
         
         viewActiveBtn.classList.toggle('active', CURRENT_VIEW === 'active');
         viewTrashBtn.classList.toggle('active', CURRENT_VIEW === 'trash');
@@ -318,18 +317,22 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
 
-    // --- Listeners & init ---
+    // --- Initialisation ---
+    saveButton.addEventListener('click', saveSettings);
     document.getElementById('login-form').addEventListener('submit', handleLogin);
     logoutBtn.addEventListener('click', handleLogout);
-    saveButton.addEventListener('click', saveSettings);
+    
     viewActiveBtn.addEventListener('click', () => switchView('active'));
     viewTrashBtn.addEventListener('click', () => switchView('trash'));
 
-    // Auto-afficher le dashboard si le cookie admin existe déjà
+    // Si un cookie admin est présent, on affiche directement le dashboard
     const hasAdminCookie = document.cookie.includes('admin_auth=VALID_ADMIN_SESSION_2024');
     if (hasAdminCookie) {
         loginFormContainer.classList.add('hidden');
         adminDashboard.classList.remove('hidden');
         loadAdminData();
+    } else {
+        adminDashboard.classList.add('hidden');
+        loginFormContainer.classList.remove('hidden');
     }
 });

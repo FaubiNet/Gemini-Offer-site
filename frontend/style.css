@@ -29,9 +29,7 @@ body {
     position: relative;
 }
 
-/* ----------------------------------------------------- */
-/* --- BACKGROUND & BASE --- */
-/* ----------------------------------------------------- */
+/* BACKGROUND */
 
 .background-animation {
     position: fixed; 
@@ -53,6 +51,8 @@ body {
         transform: translate(-50%, -50%) rotate(360deg);
     }
 }
+
+/* CARD GLOBALE */
 
 .card {
     background: var(--glass-bg);
@@ -85,9 +85,7 @@ body {
     color: var(--text-secondary);
 }
 
-/* ----------------------------------------------------- */
-/* --- STATUS & PROGRESS BAR --- */
-/* ----------------------------------------------------- */
+/* STATUS & PROGRESS BAR */
 
 .status-section {
     margin-bottom: 2rem;
@@ -132,9 +130,7 @@ body {
     font-weight: 700;
 }
 
-/* ----------------------------------------------------- */
-/* --- FORMULAIRE PUBLIC --- */
-/* ----------------------------------------------------- */
+/* FORMULAIRE PUBLIC */
 
 #email-form {
     display: flex;
@@ -154,35 +150,6 @@ body {
 }
 
 #email-form input:focus {
-    outline: none;
-    border-color: var(--blue-glow);
-    box-shadow: 0 0 5px var(--blue-glow);
-}
-
-/* --- FORMULAIRE DE CONNEXION ADMIN --- */
-
-#login-form-container {
-    margin-top: 1rem;
-}
-
-#login-form {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-}
-
-#login-form input[type="password"] {
-    padding: 1rem 1.25rem;
-    border: 1px solid var(--glass-border);
-    border-radius: 8px;
-    background-color: rgba(255, 255, 255, 0.05);
-    color: var(--text-primary);
-    font-size: 1rem;
-    transition: border-color 0.3s, box-shadow 0.3s;
-}
-
-#login-form input[type="password"]:focus {
     outline: none;
     border-color: var(--blue-glow);
     box-shadow: 0 0 5px var(--blue-glow);
@@ -229,10 +196,7 @@ body {
     color: var(--error-color);
 }
 
-
-/* ----------------------------------------------------- */
-/* --- LISTE DES INSCRITS (PUBLIC) --- */
-/* ----------------------------------------------------- */
+/* LISTE PUBLIC */
 
 .registered-list-section {
     margin-top: 2rem;
@@ -271,9 +235,7 @@ body {
     padding: 1rem;
 }
 
-/* ----------------------------------------------------- */
-/* --- MESSAGE LIMITE ATTEINTE --- */
-/* ----------------------------------------------------- */
+/* LIMIT REACHED */
 
 #limit-reached-container {
     text-align: center;
@@ -295,17 +257,13 @@ body {
     margin-top: 1.5rem;
 }
 
-/* ----------------------------------------------------- */
-/* --- UTILITIES --- */
-/* ----------------------------------------------------- */
+/* UTILITIES */
 
 .hidden {
     display: none !important;
 }
 
-/* ----------------------------------------------------- */
-/* --- ADMIN DASHBOARD STYLES --- */
-/* ----------------------------------------------------- */
+/* ADMIN DASHBOARD */
 
 .admin-card {
     max-width: 900px;
@@ -403,7 +361,6 @@ body {
     margin: 1.5rem 0;
 }
 
-
 .admin-views-container {
     display: flex;
     gap: 10px;
@@ -429,13 +386,10 @@ body {
     color: var(--text-primary);
 }
 
-/* ----------------------------------------------------- */
-/* --- TABLEAU DES INSCRITS (ADMIN) --- */
-/* ----------------------------------------------------- */
+/* TABLE ADMIN */
 
 .table-container {
     overflow-x: auto;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); 
     border-radius: 8px; 
     border: 1px solid var(--glass-border);
 }
@@ -443,7 +397,6 @@ body {
 .admin-table { 
     width: 100%; 
     border-collapse: collapse; 
-    margin-top: 0; 
     min-width: 650px;
 }
 
@@ -478,12 +431,6 @@ body {
     vertical-align: middle;
 }
 
-.admin-table td.masked-email {
-    font-family: 'Inter', monospace; 
-    color: var(--success-color); 
-    white-space: nowrap;
-}
-
 .cell-with-actions {
     display: flex;
     align-items: center;
@@ -516,7 +463,8 @@ body {
     background: rgba(255, 77, 77, 0.1);
 }
 
-/* Media Queries */
+/* RESPONSIVE */
+
 @media (max-width: 768px) {
     body {
         padding: 1rem;
@@ -561,4 +509,29 @@ body {
         width: 100%;
         text-align: center;
     }
+}
+
+/* FORMULAIRE DE CONNEXION ADMIN */
+
+#login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+#login-form input[type="password"] {
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+#login-form input[type="password"]:focus {
+    outline: none;
+    border-color: var(--blue-glow);
+    box-shadow: 0 0 5px var(--blue-glow);
 }
